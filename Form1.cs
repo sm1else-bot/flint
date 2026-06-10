@@ -895,11 +895,17 @@ public partial class Form1 : Form
             {
                 if (dropdownEntries.TryGetValue(entry.Id, out var elements))
                 {
-                    double pct = entry.TotalBytes > 0 ? (100.0 * entry.ReceivedBytes / entry.TotalBytes) : 0;
-                    elements.FillPanel.Width = (int)Math.Round(pct * 0.8);
-                    long mb = entry.TotalBytes / (1024 * 1024);
-                    long current = entry.ReceivedBytes / (1024 * 1024);
-                    elements.SizeLabel.Text = $"{current}.0 MB of {mb}.0 MB";
+                    const int trackWidth = 296;
+                    double ratio = entry.TotalBytes > 0 ? (double)entry.ReceivedBytes / entry.TotalBytes : 0;
+                    elements.FillPanel.Width = (int)Math.Round(ratio * trackWidth);
+                    elements.SizeLabel.Text = entry.TotalBytes > 0
+                        ? $"{Fmt(entry.ReceivedBytes)} / {Fmt(entry.TotalBytes)}"
+                        : "—";
+
+                    static string Fmt(long b) =>
+                        b < 1024 * 1024        ? $"{b / 1024.0:F0} KB" :
+                        b < 1024L * 1024 * 1024 ? $"{b / (1024.0 * 1024):F1} MB" :
+                                                   $"{b / (1024.0 * 1024 * 1024):F2} GB";
                 }
             });
         };
@@ -1373,19 +1379,25 @@ public partial class Form1 : Form
         private readonly Form1 owner;
         private readonly List<DownloadEntry> downloads;
         private readonly GlassButton triggerbtn;
+        private Button showAllBtn = null!;
+
+        private const int PanelWidth = 320;
+        private const int RowHeight = 110;
+        private const int FooterHeight = 40;
+        private const int MaxRows = 6;
+        private const int TrackWidth = PanelWidth - 24; // 296px
 
         public DownloadDropdownForm(Form1 owner, List<DownloadEntry> downloads, GlassButton triggerbtn)
         {
             this.owner = owner;
             this.downloads = downloads;
             this.triggerbtn = triggerbtn;
-
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(20, 20, 24);
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(320, 520);
             DoubleBuffered = true;
+            Width = PanelWidth;
         }
 
         protected override bool ShowWithoutActivation => false;
@@ -1393,123 +1405,145 @@ public partial class Form1 : Form
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            PositionBelowButton();
+
+            // Footer stored as field so UpdateDisplay() can reposition it explicitly.
+            showAllBtn = new Button
+            {
+                Text = "Show all downloads",
+                BackColor = Color.FromArgb(24, 24, 30),
+                ForeColor = Color.FromArgb(145, 145, 160),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.Hand
+            };
+            showAllBtn.FlatAppearance.BorderSize = 0;
+            showAllBtn.Click += (_, _) => { owner.ShowDownloads(); Close(); };
+            Controls.Add(showAllBtn);
+
             UpdateDisplay();
+            PositionBelowButton();
         }
 
         private void PositionBelowButton()
         {
-            Point buttonScreenPos = triggerbtn.PointToScreen(new Point(0, triggerbtn.Height));
-            Left = buttonScreenPos.X + triggerbtn.Width - Width;
-            Top = buttonScreenPos.Y + 4;
+            Point pt = triggerbtn.PointToScreen(new Point(0, triggerbtn.Height));
+            Left = pt.X + triggerbtn.Width - Width;
+            Top = pt.Y + 4;
         }
 
         public void UpdateDisplay()
         {
-            Controls.Clear();
+            // Remove all controls except the footer button.
+            for (int i = Controls.Count - 1; i >= 0; i--)
+                if (Controls[i] != showAllBtn)
+                    Controls.RemoveAt(i);
+
             owner.dropdownEntries.Clear();
 
-            var recentDownloads = downloads.Take(10).ToList();
-            int yPos = 0;
+            var recent = downloads.Take(MaxRows).ToList();
+            int contentH = recent.Count * RowHeight;
 
-            foreach (var entry in recentDownloads)
+            // Everything explicit — no Dock, no layout engine guesswork.
+            ClientSize = new Size(PanelWidth, contentH + FooterHeight);
+            showAllBtn.Bounds = new Rectangle(0, contentH, PanelWidth, FooterHeight);
+
+            int y = 0;
+            foreach (var entry in recent)
             {
-                // Filename label
-                Label nameLabel = new()
+                var row = new Panel
                 {
-                    Text = entry.FileName.Length > 40 ? entry.FileName.Substring(0, 37) + "..." : entry.FileName,
+                    Bounds = new Rectangle(0, y, PanelWidth, RowHeight),
+                    BackColor = Color.Transparent
+                };
+
+                // Separator (not on first row)
+                if (y > 0)
+                    row.Controls.Add(new Panel
+                    {
+                        Bounds = new Rectangle(12, 0, TrackWidth, 1),
+                        BackColor = Color.FromArgb(36, 255, 255, 255)
+                    });
+
+                // Filename — y=12, h=22
+                row.Controls.Add(new Label
+                {
+                    Text = entry.FileName.Length > 36 ? entry.FileName[..33] + "…" : entry.FileName,
                     ForeColor = Color.White,
                     BackColor = Color.Transparent,
-                    Font = new Font("Segoe UI", 10f),
+                    Font = new Font("Segoe UI", 9.5f),
                     AutoSize = false,
-                    Bounds = new Rectangle(12, yPos + 6, 296, 18),
-                    TextAlign = ContentAlignment.TopLeft
-                };
-                Controls.Add(nameLabel);
+                    Bounds = new Rectangle(12, 12, TrackWidth, 22),
+                    TextAlign = ContentAlignment.MiddleLeft
+                });
 
-                // Progress bar background
-                Panel barBg = new()
+                // Progress bar track — y=40, h=3
+                var barTrack = new Panel
                 {
-                    Height = 4,
-                    Width = 296,
-                    Top = yPos + 26,
-                    Left = 12,
-                    BackColor = Color.FromArgb(40, 40, 48),
-                    BorderStyle = BorderStyle.None
+                    Bounds = new Rectangle(12, 40, TrackWidth, 3),
+                    BackColor = Color.FromArgb(40, 40, 52)
                 };
-                Controls.Add(barBg);
-
-                // Progress bar fill
-                Panel fillPanel = new()
+                var fillPanel = new Panel
                 {
-                    Height = 4,
-                    Width = 0,
-                    Top = 0,
-                    Left = 0,
-                    BackColor = entry.State == "Failed" ? Color.FromArgb(255, 100, 100) : Color.FromArgb(0, 212, 255),
-                    BorderStyle = BorderStyle.None
+                    Bounds = new Rectangle(0, 0, 0, 3),
+                    BackColor = entry.State == "Failed"
+                        ? Color.FromArgb(255, 80, 80)
+                        : Color.FromArgb(0, 212, 255)
                 };
-                barBg.Controls.Add(fillPanel);
-
                 if (entry.State == "Complete")
-                    fillPanel.Width = 296;
+                    fillPanel.Width = TrackWidth;
                 else if (entry.State != "Failed" && entry.TotalBytes > 0)
-                    fillPanel.Width = (int)Math.Round(296.0 * entry.ReceivedBytes / entry.TotalBytes);
+                    fillPanel.Width = (int)Math.Round((double)TrackWidth * entry.ReceivedBytes / entry.TotalBytes);
+                barTrack.Controls.Add(fillPanel);
+                row.Controls.Add(barTrack);
 
-                // Size label
-                Label sizeLabel = new()
+                // Size label (left) — y=50, h=22
+                var sizeLabel = new Label
                 {
-                    ForeColor = Color.FromArgb(180, 180, 180),
+                    Text = BuildSizeText(entry),
+                    ForeColor = Color.FromArgb(118, 118, 135),
                     BackColor = Color.Transparent,
-                    Font = new Font("Segoe UI", 9f),
+                    Font = new Font("Segoe UI", 8.5f),
                     AutoSize = false,
-                    Bounds = new Rectangle(12, yPos + 36, 180, 14),
-                    TextAlign = ContentAlignment.TopLeft
+                    Bounds = new Rectangle(12, 50, 210, 22),
+                    TextAlign = ContentAlignment.MiddleLeft
                 };
+                row.Controls.Add(sizeLabel);
 
-                if (entry.TotalBytes > 0)
-                {
-                    long totalMB = entry.TotalBytes / (1024 * 1024);
-                    long currentMB = entry.ReceivedBytes / (1024 * 1024);
-                    sizeLabel.Text = $"{currentMB}.0 MB of {totalMB}.0 MB";
-                }
+                // State/percent label (right) — y=50, h=22
+                string stateText;
+                Color stateColor;
+                if (entry.State == "Complete")
+                { stateText = "✓ Done"; stateColor = Color.FromArgb(0, 200, 120); }
+                else if (entry.State is "Failed" or "Cancelled")
+                { stateText = entry.State; stateColor = Color.FromArgb(255, 80, 80); }
+                else if (entry.TotalBytes > 0)
+                { stateText = $"{100.0 * entry.ReceivedBytes / entry.TotalBytes:F0}%"; stateColor = Color.FromArgb(118, 118, 135); }
                 else
-                    sizeLabel.Text = "0.0 MB of 0.0 MB";
+                { stateText = ""; stateColor = Color.FromArgb(118, 118, 135); }
 
-                Controls.Add(sizeLabel);
-
-                // Percentage label
-                Label percentLabel = new()
+                row.Controls.Add(new Label
                 {
-                    ForeColor = Color.FromArgb(180, 180, 180),
+                    Text = stateText,
+                    ForeColor = stateColor,
                     BackColor = Color.Transparent,
-                    Font = new Font("Segoe UI", 9f),
+                    Font = new Font("Segoe UI", 8.5f),
                     AutoSize = false,
-                    Bounds = new Rectangle(230, yPos + 36, 78, 14),
-                    TextAlign = ContentAlignment.TopRight
-                };
+                    Bounds = new Rectangle(PanelWidth - 12 - 82, 50, 82, 22),
+                    TextAlign = ContentAlignment.MiddleRight
+                });
 
-                if (entry.State == "Complete")
-                    percentLabel.Text = "100%";
-                else if (entry.State != "Failed" && entry.TotalBytes > 0)
-                    percentLabel.Text = $"{(100.0 * entry.ReceivedBytes / entry.TotalBytes):F0}%";
-
-                Controls.Add(percentLabel);
-
-                // Action buttons for completed downloads
+                // Open / remove — y=78, h=22; bottom=100, within RowHeight=110
                 if (entry.State == "Complete")
                 {
-                    Button openBtn = new()
+                    var openBtn = new Button
                     {
                         Text = "Open",
-                        Height = 20,
-                        Width = 40,
-                        Top = yPos + 54,
-                        Left = 12,
-                        BackColor = Color.FromArgb(40, 40, 48),
-                        ForeColor = Color.White,
+                        Bounds = new Rectangle(12, 78, 48, 22),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.FromArgb(0, 200, 255),
                         FlatStyle = FlatStyle.Flat,
-                        Font = new Font("Segoe UI", 8f)
+                        Font = new Font("Segoe UI", 7.5f),
+                        Cursor = Cursors.Hand
                     };
                     openBtn.FlatAppearance.BorderSize = 0;
                     openBtn.Click += (_, _) =>
@@ -1518,57 +1552,50 @@ public partial class Form1 : Form
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                                 { FileName = entry.FilePath, UseShellExecute = true });
                     };
-                    Controls.Add(openBtn);
+                    row.Controls.Add(openBtn);
 
-                    Button closeBtn = new()
+                    var removeBtn = new Button
                     {
                         Text = "×",
-                        Height = 20,
-                        Width = 20,
-                        Top = yPos + 54,
-                        Left = 56,
-                        BackColor = Color.FromArgb(40, 40, 48),
-                        ForeColor = Color.White,
+                        Bounds = new Rectangle(64, 78, 22, 22),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.FromArgb(80, 80, 95),
                         FlatStyle = FlatStyle.Flat,
-                        Font = new Font("Segoe UI", 10f)
+                        Font = new Font("Segoe UI", 9f),
+                        Cursor = Cursors.Hand,
+                        TabStop = false
                     };
-                    closeBtn.FlatAppearance.BorderSize = 0;
-                    closeBtn.Click += (_, _) =>
+                    removeBtn.FlatAppearance.BorderSize = 0;
+                    removeBtn.Click += (_, _) =>
                     {
                         downloads.Remove(entry);
                         owner.dropdownEntries.Remove(entry.Id);
                         UpdateDisplay();
                     };
-                    Controls.Add(closeBtn);
+                    row.Controls.Add(removeBtn);
                 }
 
                 owner.dropdownEntries[entry.Id] = (fillPanel, sizeLabel);
-                yPos += 85;
-
-                if (yPos >= 400)
-                    break;
+                Controls.Add(row);
+                y += RowHeight;
             }
+        }
 
-            // Footer button
-            Button showAllBtn = new()
-            {
-                Text = "Show all downloads",
-                Height = 36,
-                Width = 320,
-                Top = yPos,
-                Left = 0,
-                BackColor = Color.FromArgb(28, 28, 32),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f)
-            };
-            showAllBtn.FlatAppearance.BorderSize = 0;
-            showAllBtn.Click += (_, _) =>
-            {
-                owner.ShowDownloads();
-                Close();
-            };
-            Controls.Add(showAllBtn);
+        private static string BuildSizeText(DownloadEntry entry)
+        {
+            if (entry.State == "Complete")
+                return entry.TotalBytes > 0 ? FormatBytes(entry.TotalBytes) : "Done";
+            if (entry.TotalBytes > 0)
+                return $"{FormatBytes(entry.ReceivedBytes)} / {FormatBytes(entry.TotalBytes)}";
+            return "—";
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes <= 0) return "0 B";
+            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F0} KB";
+            if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+            return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
         }
 
         protected override void OnDeactivate(EventArgs e)

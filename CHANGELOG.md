@@ -4,6 +4,34 @@
 
 ---
 
+## [0.1.9] — 2026-06-10
+
+### Fixed
+- **Download dropdown layout rewritten** — replaced fixed 520 px height + global `yPos` arithmetic with explicit `Bounds` on every control; `ClientSize` is set to exactly `entries × 110 + 40 px` (footer); `showAllBtn` is stored as a field and repositioned in `UpdateDisplay()` so it always sits flush at the bottom with no empty space
+- **Vertical text clipping in size/state labels** — label height was 16 px, too tight for Segoe UI 8.5 pt to render without clipping descenders; bumped to 22 px; `RowHeight` increased from 90 to 110 px to give all elements breathing room
+- **Size label width** — widened from 190 to 210 px to accommodate longer strings without horizontal clipping
+- **Live progress update format was always MB** — `BytesReceivedChanged` hardcoded `/ (1024 * 1024)` regardless of file size, so a 10 GB file showed `10240.0 MB`; replaced with an inline `Fmt()` local function using the same KB / MB / GB logic as `BuildSizeText`
+- **Progress bar width formula** — was `pct * 0.8` which capped fill at 80 px on a 296 px track; corrected to `ratio * 296`
+- **`Show all downloads` footer re-created on every refresh** — old code called `Controls.Clear()` nuking the footer then re-added it at `yPos`, causing drift; footer is now created once in `OnLoad` and only its `Bounds` are updated in `UpdateDisplay()`
+
+## [0.1.8] — 2026-06-09
+
+### Added
+- **Download dropdown panel** — clicking the toolbar downloads button now opens a floating borderless `DownloadDropdownForm` (320 px wide) anchored below the button rather than navigating to `flint://downloads`; shows up to 10 most recent downloads; auto-dismisses when it loses focus via `OnDeactivate`
+- **Per-entry download rows** — each row shows: filename (truncated to 40 chars with ellipsis), a 4 px progress bar (cyan `#00D4FF` fill while in progress, full-width on complete, red background on failure), an MB progress label (`x.0 MB of y.0 MB`), and a right-aligned percentage label
+- **Real-time progress updates** — `BytesReceivedChanged` fires `BeginInvoke` to update the fill panel width and size/percent labels live while a download is in progress, via a `dropdownEntries` dictionary keyed by `entry.Id`
+- **Open / dismiss buttons on completed rows** — `Open` launches the file with the default OS shell handler; `×` removes the entry from the in-memory list and refreshes the dropdown immediately
+- **"Show all downloads" footer** — fixed footer button at the bottom of the dropdown navigates to `flint://downloads` and closes the panel
+- **Active download badge on toolbar button** — the downloads `GlassButton` paints a cyan (`#00D4FF`) count badge in its top-right corner showing the number of in-progress downloads; repaints on `DownloadStarting` and `StateChanged`
+- **Start toast on download begin** — `"{filename} downloading"` toast fires via `BeginInvoke` when a new download starts (in addition to the existing complete toast)
+- **`ToggleDownloadDropdown()`** — toolbar button click toggles the dropdown open/closed; a second click while open closes it cleanly
+
+### Fixed
+- **`ShowWithoutActivation` assignment compile error** — `ShowWithoutActivation` is a read-only property on `Form`; changed from field assignment to a `protected override bool ShowWithoutActivation => false;` property override on `DownloadDropdownForm`
+- **In-progress state cell in `flint://downloads` page** — removed the inline progress bar HTML from the `stateCell` for in-progress downloads (replaced with an empty string) since progress is now tracked exclusively through the dropdown; eliminates a stale/frozen bar on the full downloads page
+
+---
+
 ## [0.1.7] — 2026-06-09
 
 ### Fixed
