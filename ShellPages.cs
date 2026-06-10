@@ -1285,19 +1285,12 @@ public static class ShellPages
             });
           </script>
           <section class="tab-panel" id="tab-about">
-            <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:18px;padding:24px 20px;">
-              <div>
-                <strong style="font-size:15px;letter-spacing:0.08em;">Flint</strong>
-                <span style="display:block;font-size:11px;color:rgba(255,255,255,0.28);margin-top:4px;letter-spacing:0.12em;text-transform:uppercase;">A minimal browser</span>
-              </div>
-              <p style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.55);">Flint was born from a simple idea — how stripped down can a browser be to ensure peak performance, zero telemetry, zero bloat.</p>
-              <p style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.55);">No extensions. No sync. No accounts. No phoning home. Just a window to the web, powered by WebView2, with a transparent glass shell and nothing in the way.</p>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;">
-                <div style="padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Engine</span><strong style="display:block;font-size:12px;margin-top:4px;color:rgba(255,255,255,0.65);">Chromium / WebView2</strong></div>
-                <div style="padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Telemetry</span><strong style="display:block;font-size:12px;margin-top:4px;color:rgba(255,255,255,0.65);">None</strong></div>
-                <div style="padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Platform</span><strong style="display:block;font-size:12px;margin-top:4px;color:rgba(255,255,255,0.65);">Windows / .NET 8</strong></div>
-                <div style="padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;"><span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Extensions</span><strong style="display:block;font-size:12px;margin-top:4px;color:rgba(255,255,255,0.65);">None</strong></div>
-              </div>
+            <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:16px;padding:24px 20px;">
+              <p style="font-size:13px;line-height:1.80;color:rgba(255,255,255,0.55);">Thank you for using Flint. Born out of a random train of thought on a Summer Monday, while I was deliberating on what project to embark next, I realised it wouldn't be half bad to revisit something my dad asked me over a decade and a half ago — what if there was a browser that does the bare minimum, with almost everything else stripped down, what could it accomplish?</p>
+              <p style="font-size:13px;line-height:1.80;color:rgba(255,255,255,0.55);">This was said in a time when fiber optic broadband wasn't really a thing, but being a wee pre-teen lad, I couldn't really put it to the test.</p>
+              <p style="font-size:13px;line-height:1.80;color:rgba(255,255,255,0.55);">The spark never extinguished, and thus, a long time later, Flint is created. This will be in early access for at least the next 18 months, with (ir)regular updates from time to time, hope you enjoy.</p>
+              <p style="font-size:13px;line-height:1.80;color:rgba(255,255,255,0.65);">— Jessenth</p>
+              <p style="font-size:12px;color:rgba(255,255,255,0.28);letter-spacing:0.02em;">say hi — <button data-url="mailto:hello@jessenth.com" style="background:transparent;border:none;padding:0;font-size:12px;color:rgba(255,255,255,0.42);cursor:pointer;letter-spacing:0.02em;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(255,255,255,0.18);">hello@jessenth.com</button> // <button data-url="https://instagram.com/jessenthebenezer" style="background:transparent;border:none;padding:0;font-size:12px;color:rgba(255,255,255,0.42);cursor:pointer;letter-spacing:0.02em;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(255,255,255,0.18);">@jessenthebenezer</button></p>
             </div>
           </section>
         </main>

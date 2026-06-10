@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
+
 ### Added
 - **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%). Adjusting it live-updates the percentage label and saves to `profile.json`. The home canvas dot grid picks up the stored value on next load. Stored as `PegboardGridOpacity` (double) on `BrowserProfile`.
 
