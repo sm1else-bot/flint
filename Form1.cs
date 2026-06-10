@@ -409,7 +409,7 @@ public partial class Form1 : Form
         s.AreDefaultScriptDialogsEnabled = true;
         s.AreDefaultContextMenusEnabled = true;
         s.IsStatusBarEnabled = false;
-        s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Flint/1.0";
+        s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flint/1.0 Safari/537.36";
 
         tab.View.CoreWebView2.WebMessageReceived += WebMessageReceived;
         tab.View.CoreWebView2.DownloadStarting += CoreWebView2_DownloadStarting;
