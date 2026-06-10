@@ -4,6 +4,37 @@
 
 ---
 
+## [0.2.0] — 2026-06-10
+
+### Added
+- **Flint Pegboard — full home page rewrite** — `flint://home` is now a freeform dark canvas codenamed "the Pegboard", replacing the old search bar / shortcut card layout entirely. The canvas is transparent (inherits the window's Mica/Acrylic backdrop rather than painting its own `#0a0a0a` background), overlaid with a subtle 32px dot grid at ~5.5% opacity so the structure is legible without competing with tile content.
+
+- **32px snap grid with occupancy tracking** — all tile positions and dimensions are quantised to a 32px base unit. A `Set<"x,y">` tracks every occupied grid cell; no two tiles can overlap. On drag-drop and resize, the target region is checked for collisions before the move is committed — if it fails the tile snaps back to its last valid position.
+
+- **Right-click toolbox** — right-clicking any empty area on the canvas opens a floating glass pill (glassmorphism: `rgba(255,255,255,0.08)` background, `backdrop-filter:blur(12px)`, `border-radius:999px`) anchored at the cursor position and clamped to the viewport edges. It contains three tool buttons — Note, Shortcut, Clock — each with an inline SVG icon and a label.
+
+- **Placement mode** — selecting a tool from the toolbox enters placement mode (`cursor:crosshair`). A ghost preview tile follows the cursor snapped to the grid, turning red (`rgba(255,80,80,0.5)`) when the target region is occupied. Clicking an empty region drops the tile. `Escape` cancels.
+
+- **Note tile** — resizable sticky-note tile (default 6×5 grid cells, 192×160px). The top 26px strip acts as a drag handle; the rest is a `<textarea>` with transparent background, monospace font (`Courier New, 13px`), and a subtle resize handle in the bottom-right corner. Content is saved to `pegboard.json` on every input event (debounced 500ms).
+
+- **Shortcut tile** — opens as an 8×10 setup form containing: a URL input, a 24-icon picker grid (globe, mail, code, music, film, github, twitter, youtube, instagram, linkedin, camera, book, coffee, gamepad, terminal, cloud, lock, search, star, heart, map, zap, and more), and a "Use favicon instead" checkbox that fetches `google.com/s2/favicons` at 32px. On confirm, the setup tile collapses to a 3×3 shortcut tile showing the chosen icon (or favicon) and the hostname label. Clicking a confirmed shortcut tile sends an `openUrl` WebMessage to navigate the browser.
+
+- **Clock tile** — a 4×2 tile showing the current local time in `HH:MM` monospace format and the abbreviated date (`Tue, Jun 10`) below. Updates every second via `setInterval`; the interval is stored on the element and cleared via `clearInterval` when the tile is removed, preventing leaks.
+
+- **Tile drag** — tiles are draggable from their header/body area (excluding interactive sub-elements). Drag begins after a 5px threshold to distinguish from clicks. While dragging, the tile's occupancy is released so the destination is checked correctly; if the drop zone is occupied the tile snaps back to its original grid position. Shortcut tiles that have a confirmed URL fire an `openUrl` message on click only if no drag occurred (`wasDragged` flag).
+
+- **Tile resize (Note tiles)** — a diagonal grip icon in the bottom-right corner lets the user drag to resize note tiles. Minimum size is 3×2 grid cells. Grid occupancy is released during resize and re-claimed at the snapped final size; collision detection prevents resizing into occupied space.
+
+- **Tile deletion** — every tile has an `×` button in the top-right corner that removes it from the canvas and from the tiles array, releasing its grid cells.
+
+- **Pegboard persistence** — state is saved to `%LocalAppData%\Flint\pegboard.json` as a JSON array of tile descriptors (id, type, gridX, gridY, gridW, gridH, content). Two new `WebMessageReceived` handlers in `Form1.cs`:
+  - `loadPegboard` — reads the JSON file (or defaults to `[]`), replies with a `pegboardData` message containing the tiles array; fires on page load
+  - `savePegboard` — receives the serialised tiles array and writes it to disk; save is debounced 500ms client-side; incomplete shortcut setup tiles are filtered out before saving
+
+- **Empty-state hint** — when the canvas has no tiles a centred handwritten-style label reads *"right click to peg stuff!"* in a cursive system font (`Segoe Script` → `Caveat` → `Comic Sans MS`) at low opacity. It fades out (400ms CSS transition) the moment the first tile is placed and fades back if all tiles are removed.
+
+---
+
 ## [0.1.9] — 2026-06-10
 
 ### Fixed

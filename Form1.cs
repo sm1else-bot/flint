@@ -626,6 +626,31 @@ public partial class Form1 : Form
                 case "openUrl":
                     Navigate(GetString(root, "url"));
                     break;
+                case "loadPegboard":
+                {
+                    string pegPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Flint", "pegboard.json");
+                    string tilesJson = "[]";
+                    if (File.Exists(pegPath))
+                        try { tilesJson = File.ReadAllText(pegPath); } catch { }
+                    (sender as CoreWebView2)?.PostWebMessageAsString(
+                        "{\"type\":\"pegboardData\",\"tiles\":" + tilesJson + "}");
+                    break;
+                }
+                case "savePegboard":
+                {
+                    string data = GetString(root, "json");
+                    if (!string.IsNullOrWhiteSpace(data))
+                    {
+                        string pegPath = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "Flint", "pegboard.json");
+                        Directory.CreateDirectory(Path.GetDirectoryName(pegPath)!);
+                        File.WriteAllText(pegPath, data);
+                    }
+                    break;
+                }
                 case "clearHistory":
                     store.ClearHistory();
                     RefreshInternalPage();

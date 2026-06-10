@@ -9,215 +9,533 @@ public static class ShellPages
     <!doctype html>
     <html lang="en">
     <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Flint</title>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <title>Home</title>
       <style>
-        :root { color-scheme: dark; }
-
-        *, *::before, *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{color-scheme:dark}
+        html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+        #canvas{
+          position:relative;width:100%;height:100%;overflow:auto;
+          background-color:transparent;
+          background-image:radial-gradient(circle,rgba(255,255,255,.055) 1px,transparent 1px);
+          background-size:32px 32px;
         }
-
-        html, body {
-          height: 100%;
-          background: transparent !important;
-          font-family: "Segoe UI", system-ui, sans-serif;
+        #hint{
+          position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+          font-family:'Segoe Script','Caveat','Comic Sans MS',cursive;
+          font-size:22px;color:rgba(255,255,255,.18);pointer-events:none;
+          user-select:none;white-space:nowrap;transition:opacity 400ms;
         }
-
-        body {
-          position: relative;
-          overflow-x: hidden;
+        #hint.gone{opacity:0}
+        #toolbox{
+          position:fixed;display:flex;align-items:center;gap:2px;padding:6px;
+          background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
+          -webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
+          border-radius:999px;z-index:9999;
         }
-
-        .corner {
-          position: fixed;
-          top: 22px;
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.20);
-          letter-spacing: 0.25em;
-          user-select: none;
-          pointer-events: none;
+        #toolbox.hidden{display:none}
+        .tb-btn{
+          width:52px;height:52px;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;gap:3px;
+          background:transparent;border:none;border-radius:8px;
+          cursor:pointer;color:rgba(255,255,255,.65);
+          transition:background 120ms,color 120ms;padding:4px;
         }
-
-        .corner-left { left: 28px; }
-
-        .corner-right {
-          right: 28px;
-          letter-spacing: 0.08em;
-          font-variant-numeric: tabular-nums;
+        .tb-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+        .tb-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;
+          stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+        .tb-btn span{font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+          opacity:.4;font-family:system-ui}
+        .tile{
+          position:absolute;background:rgba(255,255,255,.055);
+          border:1px solid rgba(255,255,255,.10);border-radius:12px;
+          backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+          box-sizing:border-box;overflow:hidden;
         }
-
-        .home {
-          position: absolute;
-          top: 45vh;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 32px;
-          width: 100%;
-          padding: 0 24px;
+        .tile.dragging{
+          opacity:.85;box-shadow:0 16px 40px rgba(0,0,0,.5);
+          z-index:500;overflow:visible;
         }
-
-        .search {
-          -webkit-appearance: none;
-          appearance: none;
-          display: block;
-          width: 100%;
-          max-width: 520px;
-          height: 44px;
-          padding: 0 16px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          border-radius: 10px;
-          outline: none;
-          color: #fff;
-          font-size: 14px;
-          font-family: inherit;
-          backdrop-filter: blur(5px);
-          -webkit-backdrop-filter: blur(5px);
-          transition: border-color 150ms ease;
+        .tile-x{
+          position:absolute;top:5px;right:7px;width:18px;height:18px;
+          background:transparent;border:none;color:rgba(255,255,255,.28);
+          cursor:pointer;font-size:14px;line-height:18px;text-align:center;
+          border-radius:4px;z-index:20;padding:0;font-family:system-ui;
+          transition:color 120ms,background 120ms;
         }
-
-        .search::placeholder {
-          color: rgba(255, 255, 255, 0.25);
+        .tile-x:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.08)}
+        .note-tile{cursor:grab}
+        .note-body{
+          position:absolute;top:26px;left:0;right:0;bottom:16px;
+          padding:2px 12px;font-family:'Courier New',monospace;font-size:13px;
+          color:rgba(255,255,255,.78);background:transparent;border:none;
+          outline:none;resize:none;overflow:auto;line-height:1.65;cursor:text;
         }
-
-        .search:focus {
-          border-color: rgba(255, 255, 255, 0.22);
+        .note-body::placeholder{color:rgba(255,255,255,.15)}
+        .rh{
+          position:absolute;bottom:3px;right:3px;width:14px;height:14px;
+          cursor:se-resize;opacity:.22;z-index:10;
+          display:flex;align-items:center;justify-content:center;
         }
-
-        .cards {
-          display: flex;
-          flex-wrap: nowrap;
-          gap: 12px;
-          padding: 20px 0;
+        .rh:hover{opacity:.6}
+        .sc-tile{
+          display:flex;flex-direction:column;align-items:center;
+          justify-content:center;gap:5px;cursor:pointer;transition:background 120ms;
         }
-
-        .card {
-          width: 22vw;
-          max-width: 180px;
-          height: 160px;
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-between;
-          padding: 28px 0 22px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 16px;
-          color: inherit;
-          cursor: pointer;
-          backdrop-filter: blur(5px);
-          -webkit-backdrop-filter: blur(5px);
-          transition: background 150ms ease, border-color 150ms ease;
-          user-select: none;
+        .sc-tile:hover{background:rgba(255,255,255,.08)}
+        .sc-tile svg{width:26px;height:26px;stroke:rgba(255,255,255,.55);fill:none;
+          stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+        .sc-tile img{width:26px;height:26px;border-radius:4px;object-fit:contain}
+        .sc-lbl{
+          font-size:9px;letter-spacing:.10em;text-transform:uppercase;
+          color:rgba(255,255,255,.32);max-width:80px;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;padding:0 6px;
         }
-
-        .card:hover {
-          background: rgba(255, 255, 255, 0.09);
-          border-color: rgba(255, 255, 255, 0.22);
+        .sc-form{
+          position:absolute;inset:28px 0 0;padding:0 12px 12px;
+          display:flex;flex-direction:column;gap:6px;overflow-y:auto;cursor:default;
         }
-
-        .card svg { opacity: 0.5; }
-
-        .card span {
-          font-size: 11px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.50);
+        .sc-form input[type='text']{
+          width:100%;background:rgba(255,255,255,.06);
+          border:1px solid rgba(255,255,255,.12);border-radius:6px;
+          color:rgba(255,255,255,.8);font-size:11px;font-family:system-ui;
+          padding:5px 8px;outline:none;
         }
-
-        @media (max-width: 600px) {
-          .corner { display: none; }
-          .card { width: 20vw; height: 120px; padding: 18px 0 14px; }
-          .card svg { width: 22px; height: 22px; }
+        .sc-form input[type='text']:focus{border-color:rgba(255,255,255,.28)}
+        .sc-form-lbl{
+          font-size:9px;letter-spacing:.10em;text-transform:uppercase;
+          color:rgba(255,255,255,.25);font-family:system-ui;margin-top:2px;
         }
-
-        @media (max-width: 380px) {
-          .cards { gap: 6px; }
-          .card { width: 18vw; }
+        .ic-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+        .ic-opt{
+          height:32px;display:flex;align-items:center;justify-content:center;
+          border-radius:5px;cursor:pointer;border:1px solid transparent;
+          transition:background 100ms;
         }
+        .ic-opt:hover{background:rgba(255,255,255,.08)}
+        .ic-opt.on{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.10)}
+        .ic-opt svg{width:14px;height:14px;stroke:rgba(255,255,255,.5);fill:none;
+          stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+        .fav-row{
+          display:flex;align-items:center;gap:5px;font-size:10px;
+          color:rgba(255,255,255,.32);cursor:pointer;user-select:none;
+        }
+        .sc-ok{
+          width:100%;padding:5px 0;background:rgba(255,255,255,.07);
+          border:1px solid rgba(255,255,255,.12);border-radius:6px;
+          color:rgba(255,255,255,.55);font-size:11px;font-family:system-ui;
+          cursor:pointer;transition:background 120ms;margin-top:2px;
+        }
+        .sc-ok:hover{background:rgba(255,255,255,.12)}
+        .cl-tile{display:flex;flex-direction:column;align-items:center;
+          justify-content:center;gap:2px;cursor:grab}
+        .cl-time{font-family:'Courier New',monospace;font-size:28px;
+          letter-spacing:.05em;color:rgba(255,255,255,.82)}
+        .cl-date{font-size:10px;letter-spacing:.10em;text-transform:uppercase;
+          color:rgba(255,255,255,.28);font-family:system-ui}
+        .ghost{
+          position:absolute;border:1px dashed rgba(255,255,255,.3);
+          border-radius:12px;background:rgba(255,255,255,.02);
+          pointer-events:none;z-index:100;transition:border-color 80ms,background 80ms;
+        }
+        .ghost.no{border-color:rgba(255,80,80,.5);background:rgba(255,60,60,.04)}
+        body.placing{cursor:crosshair!important}
+        body.placing .tile,body.placing .tile *{cursor:crosshair!important}
       </style>
     </head>
     <body>
-      <div class="corner corner-left">flint</div>
-      <div class="corner corner-right" id="clock"></div>
-
-      <div class="home">
-        <input class="search" id="q" type="text" autocomplete="off" spellcheck="false"
-               placeholder="search or type a url" />
-
-        <div class="cards">
-          <button class="card" data-action="openSearch">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="14" cy="14" r="9.5" stroke="white" stroke-width="1.5"/>
-              <ellipse cx="14" cy="14" rx="4.5" ry="9.5" stroke="white" stroke-width="1.5"/>
-              <line x1="4.5" y1="14" x2="23.5" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <span>web</span>
-          </button>
-
-          <button class="card" data-query="social">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 8C5 7.45 5.45 7 6 7H22C22.55 7 23 7.45 23 8V17C23 17.55 22.55 18 22 18H16L11 22V18H6C5.45 18 5 17.55 5 17V8Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-            </svg>
-            <span>social</span>
-          </button>
-
-          <button class="card" data-query="streaming">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="7" width="20" height="14" rx="2" stroke="white" stroke-width="1.5"/>
-              <path d="M11.5 11.5L18 14L11.5 16.5V11.5Z" fill="white"/>
-            </svg>
-            <span>media</span>
-          </button>
-
-          <button class="card" data-query="shopping">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 11H21L19.5 21H8.5L7 11Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-              <path d="M10.5 11C10.5 11 10.5 7.5 14 7.5C17.5 7.5 17.5 11 17.5 11" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <span>shop</span>
-          </button>
-        </div>
+      <div id="canvas"><div id="hint">right click to peg stuff!</div></div>
+      <div id="toolbox" class="hidden">
+        <button class="tb-btn" id="tb-note">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>note</span>
+        </button>
+        <button class="tb-btn" id="tb-sc">
+          <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span>shortcut</span>
+        </button>
+        <button class="tb-btn" id="tb-cl">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>clock</span>
+        </button>
       </div>
-
       <script>
         const post = p => window.chrome?.webview?.postMessage(JSON.stringify(p));
+        const G = 32;
+        const canvas = document.getElementById('canvas');
+        const toolbox = document.getElementById('toolbox');
+        const p2g = v => Math.max(0, Math.round(v / G));
+        const g2p = g => g * G;
+        const K = (x,y) => x + ',' + y;
 
-        (function tick() {
-          const d = new Date();
-          const hh = String(d.getHours()).padStart(2, '0');
-          const mm = String(d.getMinutes()).padStart(2, '0');
-          document.getElementById('clock').textContent = hh + ':' + mm;
-          const ms = (60 - d.getSeconds()) * 1000 - d.getMilliseconds();
-          setTimeout(tick, ms);
-        })();
+        const DEF = { note:{w:6,h:5}, shortcut:{w:3,h:3}, clock:{w:4,h:2} };
+        const SW = 8, SH = 10;
 
-        function isUrl(s) {
-          return /^https?:\/\//i.test(s) || (!s.includes(' ') && /\.[a-z]{2,}/i.test(s));
+        let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm;
+
+        function claim(t) {
+          for (let x=t.gridX; x<t.gridX+t.gridW; x++)
+            for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.add(K(x,y));
+        }
+        function release(t) {
+          for (let x=t.gridX; x<t.gridX+t.gridW; x++)
+            for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.delete(K(x,y));
+        }
+        function free(gx,gy,gw,gh) {
+          for (let x=gx; x<gx+gw; x++)
+            for (let y=gy; y<gy+gh; y++) if (occ.has(K(x,y))) return false;
+          return true;
+        }
+        function sched() {
+          clearTimeout(saveTm);
+          saveTm = setTimeout(() => {
+            const out = tiles.filter(t => t.type !== 'shortcut' || t.content?.url);
+            post({ type:'savePegboard', json: JSON.stringify(out) });
+          }, 500);
         }
 
-        document.getElementById('q').addEventListener('keydown', function(e) {
-          if (e.key !== 'Enter') return;
-          const v = this.value.trim();
-          if (!v) return;
-          if (isUrl(v)) post({ type: 'openUrl', url: /^https?:\/\//i.test(v) ? v : 'https://' + v });
-          else post({ type: 'search', query: v });
+        const IC = {
+          globe:         '<circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/>',
+          mail:          '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+          code:          '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+          music:         '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+          film:          '<rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>',
+          'shopping-bag':'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+          chat:          '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+          github:        '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>',
+          twitter:       '<path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>',
+          youtube:       '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/>',
+          instagram:     '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+          linkedin:      '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+          camera:        '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+          book:          '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+          coffee:        '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+          gamepad:       '<line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/>',
+          terminal:      '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
+          cloud:         '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
+          lock:          '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+          search:        '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+          star:          '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+          heart:         '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+          map:           '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
+          zap:           '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+        };
+        const ICN = Object.keys(IC);
+
+        function mkSvg(body, sz) {
+          return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="' + sz + '" height="' + sz + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
+        }
+
+        function mkTile(t) {
+          const el = document.createElement('div');
+          el.className = 'tile';
+          el.dataset.id = t.id;
+          el.style.left   = g2p(t.gridX) + 'px';
+          el.style.top    = g2p(t.gridY) + 'px';
+          el.style.width  = g2p(t.gridW) + 'px';
+          el.style.height = g2p(t.gridH) + 'px';
+          const xb = document.createElement('button');
+          xb.className = 'tile-x';
+          xb.textContent = '\xd7';
+          xb.addEventListener('click', e => { e.stopPropagation(); rmTile(t.id); });
+          el.appendChild(xb);
+          if (t.type === 'note')     mkNote(el, t);
+          if (t.type === 'shortcut') mkSc(el, t);
+          if (t.type === 'clock')    mkCl(el, t);
+          setupDrag(el, t);
+          canvas.appendChild(el);
+        }
+
+        function mkNote(el, t) {
+          el.classList.add('note-tile');
+          const ta = document.createElement('textarea');
+          ta.className = 'note-body';
+          ta.placeholder = 'note...';
+          ta.value = t.content?.text || '';
+          ta.addEventListener('input', () => { t.content = { text: ta.value }; sched(); });
+          ta.addEventListener('mousedown', e => e.stopPropagation());
+          el.appendChild(ta);
+          const rh = document.createElement('div');
+          rh.className = 'rh';
+          rh.innerHTML = '<svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="10" x2="10" y2="2"/><line x1="6" y1="10" x2="10" y2="6"/></svg>';
+          setupResize(rh, el, t);
+          el.appendChild(rh);
+        }
+
+        function mkSc(el, t) {
+          if (!t.content?.url) { mkScForm(el, t); return; }
+          el.classList.add('sc-tile');
+          let icon;
+          if (t.content.favicon) {
+            icon = document.createElement('img');
+            icon.src = t.content.favicon;
+          } else {
+            icon = document.createElement('span');
+            icon.innerHTML = mkSvg(IC[t.content.icon] || IC.globe, 26);
+          }
+          el.appendChild(icon);
+          const lbl = document.createElement('div');
+          lbl.className = 'sc-lbl';
+          try { lbl.textContent = new URL(t.content.url).hostname.replace(/^www\./, ''); }
+          catch { lbl.textContent = t.content.url; }
+          el.appendChild(lbl);
+        }
+
+        function mkScForm(el, t) {
+          el.style.cursor = 'default';
+          const form = document.createElement('div');
+          form.className = 'sc-form';
+          const urlInp = document.createElement('input');
+          urlInp.type = 'text';
+          urlInp.placeholder = 'https://...';
+          urlInp.addEventListener('mousedown', e => e.stopPropagation());
+          urlInp.addEventListener('click', e => e.stopPropagation());
+          form.appendChild(urlInp);
+          const icLbl = document.createElement('div');
+          icLbl.className = 'sc-form-lbl';
+          icLbl.textContent = 'icon';
+          form.appendChild(icLbl);
+          const grid = document.createElement('div');
+          grid.className = 'ic-grid';
+          let selIcon = 'globe';
+          ICN.forEach(name => {
+            const opt = document.createElement('div');
+            opt.className = 'ic-opt' + (name === selIcon ? ' on' : '');
+            opt.innerHTML = mkSvg(IC[name], 14);
+            opt.addEventListener('click', e => {
+              e.stopPropagation();
+              grid.querySelectorAll('.on').forEach(o => o.classList.remove('on'));
+              opt.classList.add('on');
+              selIcon = name;
+            });
+            grid.appendChild(opt);
+          });
+          form.appendChild(grid);
+          const favRow = document.createElement('label');
+          favRow.className = 'fav-row';
+          const favChk = document.createElement('input');
+          favChk.type = 'checkbox';
+          favChk.addEventListener('mousedown', e => e.stopPropagation());
+          favRow.appendChild(favChk);
+          favRow.appendChild(document.createTextNode('Use favicon instead'));
+          form.appendChild(favRow);
+          const okBtn = document.createElement('button');
+          okBtn.className = 'sc-ok';
+          okBtn.textContent = 'Add shortcut';
+          okBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            let url = urlInp.value.trim();
+            if (!url) return;
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+            let favicon = null;
+            if (favChk.checked) {
+              try { favicon = 'https://www.google.com/s2/favicons?domain=' + new URL(url).hostname + '&sz=32'; }
+              catch {}
+            }
+            const old = canvas.querySelector('[data-id="' + t.id + '"]');
+            release(t);
+            t.content = { url, icon: selIcon, favicon };
+            t.gridW = DEF.shortcut.w;
+            t.gridH = DEF.shortcut.h;
+            claim(t);
+            if (old) old.remove();
+            mkTile(t);
+            sched();
+          });
+          form.appendChild(okBtn);
+          el.appendChild(form);
+        }
+
+        function mkCl(el, t) {
+          el.classList.add('cl-tile');
+          const te = document.createElement('div'); te.className = 'cl-time';
+          const de = document.createElement('div'); de.className = 'cl-date';
+          function tick() {
+            const n = new Date();
+            te.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+            de.textContent = n.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+          }
+          tick();
+          el._iv = setInterval(tick, 1000);
+          el.appendChild(te);
+          el.appendChild(de);
+        }
+
+        function setupDrag(el, t) {
+          let wasDragged = false;
+          el.addEventListener('mousedown', e => {
+            if (e.target.closest('.tile-x,.note-body,.rh,.sc-form')) return;
+            e.preventDefault();
+            const sx = e.clientX, sy = e.clientY;
+            const sl = parseInt(el.style.left), st = parseInt(el.style.top);
+            let moved = false;
+            wasDragged = false;
+            const mm = ev => {
+              const dx = ev.clientX-sx, dy = ev.clientY-sy;
+              if (!moved && Math.hypot(dx,dy) > 5) {
+                moved = true; wasDragged = true;
+                el.classList.add('dragging');
+                release(t);
+              }
+              if (moved) {
+                el.style.left = Math.max(0, sl+dx) + 'px';
+                el.style.top  = Math.max(0, st+dy) + 'px';
+              }
+            };
+            const mu = () => {
+              document.removeEventListener('mousemove', mm);
+              document.removeEventListener('mouseup', mu);
+              if (!moved) return;
+              el.classList.remove('dragging');
+              const ngx = p2g(parseInt(el.style.left));
+              const ngy = p2g(parseInt(el.style.top));
+              if (free(ngx, ngy, t.gridW, t.gridH)) { t.gridX = ngx; t.gridY = ngy; }
+              el.style.left = g2p(t.gridX) + 'px';
+              el.style.top  = g2p(t.gridY) + 'px';
+              claim(t); sched();
+            };
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+          });
+          if (t.type === 'shortcut' && t.content?.url) {
+            el.addEventListener('click', e => {
+              if (wasDragged) return;
+              if (!e.target.closest('.tile-x')) post({ type:'openUrl', url:t.content.url });
+            });
+          }
+        }
+
+        function setupResize(handle, el, t) {
+          handle.addEventListener('mousedown', e => {
+            e.preventDefault(); e.stopPropagation();
+            const sx = e.clientX, sy = e.clientY;
+            const sw = t.gridW, sh = t.gridH;
+            release(t);
+            const mm = ev => {
+              const nw = Math.max(3, sw + Math.round((ev.clientX-sx)/G));
+              const nh = Math.max(2, sh + Math.round((ev.clientY-sy)/G));
+              el.style.width  = g2p(nw) + 'px';
+              el.style.height = g2p(nh) + 'px';
+            };
+            const mu = () => {
+              document.removeEventListener('mousemove', mm);
+              document.removeEventListener('mouseup', mu);
+              const nw = Math.max(3, p2g(parseInt(el.style.width)));
+              const nh = Math.max(2, p2g(parseInt(el.style.height)));
+              if (free(t.gridX, t.gridY, nw, nh)) { t.gridW = nw; t.gridH = nh; }
+              el.style.width  = g2p(t.gridW) + 'px';
+              el.style.height = g2p(t.gridH) + 'px';
+              claim(t); sched();
+            };
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+          });
+        }
+
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+        const hint = document.getElementById('hint');
+        function syncHint() { hint.classList.toggle('gone', tiles.length > 0); }
+
+        function addTile(type, gx, gy) {
+          const gw = type === 'shortcut' ? SW : DEF[type].w;
+          const gh = type === 'shortcut' ? SH : DEF[type].h;
+          if (!free(gx, gy, gw, gh)) return false;
+          const t = { id:uid(), type, gridX:gx, gridY:gy, gridW:gw, gridH:gh, content:{} };
+          tiles.push(t); claim(t); mkTile(t); sched(); syncHint();
+          return true;
+        }
+
+        function rmTile(id) {
+          const i = tiles.findIndex(t => t.id === id);
+          if (i < 0) return;
+          release(tiles[i]); tiles.splice(i, 1);
+          const el = canvas.querySelector('[data-id="' + id + '"]');
+          if (el) { clearInterval(el._iv); el.remove(); }
+          sched(); syncHint();
+        }
+
+        function showBox(x, y) {
+          toolbox.style.left = Math.min(x, innerWidth-220) + 'px';
+          toolbox.style.top  = Math.min(y, innerHeight-80) + 'px';
+          toolbox.classList.remove('hidden');
+        }
+        function hideBox() { toolbox.classList.add('hidden'); }
+
+        document.getElementById('tb-note').addEventListener('click', () => startPlace('note'));
+        document.getElementById('tb-sc').addEventListener('click',   () => startPlace('shortcut'));
+        document.getElementById('tb-cl').addEventListener('click',   () => startPlace('clock'));
+
+        function startPlace(type) {
+          hideBox(); placing = type; document.body.classList.add('placing');
+          const gw = type === 'shortcut' ? SW : DEF[type].w;
+          const gh = type === 'shortcut' ? SH : DEF[type].h;
+          ghost = document.createElement('div');
+          ghost.className = 'ghost';
+          ghost.style.width  = g2p(gw) + 'px';
+          ghost.style.height = g2p(gh) + 'px';
+          canvas.appendChild(ghost);
+        }
+
+        canvas.addEventListener('mousemove', e => {
+          if (!placing || !ghost) return;
+          const r  = canvas.getBoundingClientRect();
+          const gx = p2g(e.clientX - r.left);
+          const gy = p2g(e.clientY - r.top);
+          const gw = placing === 'shortcut' ? SW : DEF[placing].w;
+          const gh = placing === 'shortcut' ? SH : DEF[placing].h;
+          ghost.style.left = g2p(gx) + 'px';
+          ghost.style.top  = g2p(gy) + 'px';
+          ghost.classList.toggle('no', !free(gx, gy, gw, gh));
         });
 
-        document.querySelectorAll('.card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            if (card.dataset.action) post({ type: card.dataset.action });
-            else if (card.dataset.query) post({ type: 'search', query: card.dataset.query });
-          });
+        canvas.addEventListener('click', e => {
+          if (!placing) return;
+          if (e.target.closest('.tile')) return;
+          const r  = canvas.getBoundingClientRect();
+          const gx = p2g(e.clientX - r.left);
+          const gy = p2g(e.clientY - r.top);
+          if (ghost) { ghost.remove(); ghost = null; }
+          document.body.classList.remove('placing');
+          addTile(placing, gx, gy);
+          placing = null;
         });
+
+        canvas.addEventListener('contextmenu', e => {
+          if (e.target.closest('.tile')) return;
+          e.preventDefault();
+          showBox(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mousedown', e => {
+          if (!toolbox.classList.contains('hidden') && !toolbox.contains(e.target)) hideBox();
+        });
+
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') {
+            hideBox();
+            if (placing) {
+              placing = null;
+              if (ghost) { ghost.remove(); ghost = null; }
+              document.body.classList.remove('placing');
+            }
+          }
+        });
+
+        window.chrome?.webview?.addEventListener('message', e => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.type !== 'pegboardData') return;
+            tiles = msg.tiles || [];
+            occ.clear();
+            canvas.querySelectorAll('.tile').forEach(el => { clearInterval(el._iv); el.remove(); });
+            tiles.forEach(t => { claim(t); mkTile(t); }); syncHint();
+          } catch {}
+        });
+
+        post({ type: 'loadPegboard' });
       </script>
     </body>
     </html>
