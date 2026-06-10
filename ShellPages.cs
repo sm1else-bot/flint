@@ -416,6 +416,13 @@ public static class ShellPages
           </section>
 
           <section class="tab-panel" id="tab-data">
+            <div class="settings-row" style="margin-bottom:8px;">
+              <div>
+                <strong>Download Folder</strong>
+                <span>{{Html(profile.DownloadFolder)}}</span>
+              </div>
+              <button class="primary-action" data-action="changeDownloadFolder">Change</button>
+            </div>
             <div class="settings-row">
               <div>
                 <strong>History</strong>
@@ -470,6 +477,176 @@ public static class ShellPages
         </main>
         """);
     }
+
+    public static string Downloads(IReadOnlyList<DownloadEntry> downloads, string downloadFolder)
+    {
+        string rows = downloads.Count == 0
+            ? """<tr><td colspan="5" class="dl-empty">No downloads yet.</td></tr>"""
+            : string.Join(Environment.NewLine, downloads.Select(entry =>
+            {
+                double pct = entry.TotalBytes > 0 ? Math.Clamp(100.0 * entry.ReceivedBytes / entry.TotalBytes, 0, 100) : 0;
+                string stateCell;
+                if (entry.State == "Complete")
+                    stateCell = $"""<span class="dl-state-ok">Complete</span> <button class="small-action" data-open-file="{Attr(entry.FilePath)}">Open</button>""";
+                else if (entry.State is "Failed" or "Cancelled")
+                    stateCell = $"""<span class="dl-state-err">{Html(entry.State)}</span>""";
+                else
+                    stateCell = $"""<div class="dl-bar-wrap"><div class="dl-bar-fill" style="width:{pct:F0}%"></div></div>""";
+
+                return $$"""
+                  <tr class="dl-row">
+                    <td class="dl-name">{{Html(entry.FileName)}}</td>
+                    <td class="dl-url">{{Html(entry.Url)}}</td>
+                    <td class="dl-size">{{Html(FormatBytes(entry.TotalBytes))}}</td>
+                    <td class="dl-time">{{Html(FormatTimestamp(entry.StartedAt))}}</td>
+                    <td class="dl-actions">{{stateCell}} <button class="dl-remove" data-remove-download="{{Attr(entry.Id)}}">×</button></td>
+                  </tr>
+                  """;
+            }));
+
+        return Page("Downloads", $$"""
+        <style>
+          .dl-shell {
+            width: 100%;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 24px;
+          }
+          .dl-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+          }
+          .dl-header h1 {
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+          }
+          .dl-folder {
+            flex: 1;
+            font-size: 11px;
+            color: rgba(255,255,255,0.20);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .dl-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          .dl-row {
+            height: 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+          .dl-row:last-child { border-bottom: none; }
+          .dl-name {
+            width: 22%;
+            font-size: 13px;
+            color: rgba(255,255,255,0.80);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 10px 0 0;
+          }
+          .dl-url {
+            width: 28%;
+            font-size: 11px;
+            color: rgba(255,255,255,0.28);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 10px;
+          }
+          .dl-size {
+            width: 80px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.28);
+            white-space: nowrap;
+            text-align: right;
+            padding: 0 10px;
+          }
+          .dl-time {
+            width: 110px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            white-space: nowrap;
+            text-align: right;
+            padding: 0 10px;
+          }
+          .dl-actions {
+            width: 1%;
+            white-space: nowrap;
+            text-align: right;
+            padding: 0 0 0 8px;
+          }
+          .dl-bar-wrap {
+            display: inline-block;
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            vertical-align: middle;
+          }
+          .dl-bar-fill {
+            height: 100%;
+            background: rgba(116,247,255,0.70);
+            border-radius: 2px;
+          }
+          .dl-state-ok { font-size: 11px; color: rgba(116,247,255,0.80); }
+          .dl-state-err { font-size: 11px; color: rgba(255,100,100,0.70); }
+          .dl-remove {
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            color: rgba(255,255,255,0.30);
+            cursor: pointer;
+            padding: 0;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 6px;
+            vertical-align: middle;
+            margin-left: 4px;
+          }
+          .dl-remove:hover { color: rgba(255,255,255,0.70); }
+          .dl-empty {
+            padding: 32px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.25);
+            text-align: center;
+          }
+        </style>
+        <div class="dl-shell">
+          <div class="dl-header">
+            <h1>Downloads</h1>
+            <span class="dl-folder">{{Html(downloadFolder)}}</span>
+            <button class="primary-action" data-action="changeDownloadFolder">Change folder</button>
+          </div>
+          <table class="dl-table">
+            <tbody>
+              {{rows}}
+            </tbody>
+          </table>
+        </div>
+        """);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0) return "—";
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+
+    private static string FormatTimestamp(DateTime timestamp) =>
+        timestamp.ToString("MMM d, h:mm tt", CultureInfo.CurrentCulture);
 
     private static string Page(string title, string body) => $$"""
     <!doctype html>
@@ -758,7 +935,7 @@ public static class ShellPages
         };
 
         document.addEventListener("click", (event) => {
-          const el = event.target.closest("[data-action], [data-url], [data-query], [data-delete-history], [data-delete-bookmark], [data-engine], [data-tab], [data-adblock-toggle]");
+          const el = event.target.closest("[data-action], [data-url], [data-query], [data-delete-history], [data-delete-bookmark], [data-engine], [data-tab], [data-adblock-toggle], [data-open-file], [data-remove-download]");
           if (!el) return;
 
           if (el.dataset.tab) {
@@ -780,6 +957,8 @@ public static class ShellPages
           if (el.dataset.deleteHistory) post({ type: "deleteHistory", id: el.dataset.deleteHistory });
           if (el.dataset.deleteBookmark) post({ type: "deleteBookmark", id: el.dataset.deleteBookmark });
           if (el.dataset.engine) post({ type: "setSearchEngine", engine: el.dataset.engine });
+          if (el.dataset.openFile) post({ type: "openFile", path: el.dataset.openFile });
+          if (el.dataset.removeDownload) post({ type: "removeDownload", id: el.dataset.removeDownload });
         });
       </script>
     </body>

@@ -147,6 +147,8 @@ public sealed class BrowserProfile
 {
     public BrowserSettings Settings { get; set; } = new();
     public bool AdBlockEnabled { get; set; } = true;
+    public string DownloadFolder { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     public List<HistoryItem> History { get; set; } = [];
     public List<BookmarkItem> Bookmarks { get; set; } = [];
 }
@@ -170,6 +172,18 @@ public sealed class BookmarkItem
     public string Title { get; set; } = "";
     public string Url { get; set; } = "";
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class DownloadEntry
+{
+    public string Id { get; } = Guid.NewGuid().ToString("N");
+    public string FileName { get; set; } = "";
+    public string FilePath { get; set; } = "";
+    public string Url { get; set; } = "";
+    public long TotalBytes { get; set; }
+    public long ReceivedBytes { get; set; }
+    public string State { get; set; } = "In Progress";
+    public DateTime StartedAt { get; set; } = DateTime.Now;
 }
 
 public sealed class SearchEngine

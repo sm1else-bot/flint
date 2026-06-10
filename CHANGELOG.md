@@ -4,6 +4,13 @@
 
 ---
 
+## [0.1.6] — 2026-06-09
+
+### Fixed
+- **Download manager reimplemented** — lost in a bad git checkout; fully restored: `DownloadStarting` handler, `DownloadEntry` model, `DownloadFolder` profile field, Downloads page (`flint://downloads`), `Ctrl+J` shortcut, toolbar download button, `openFile`/`removeDownload`/`changeDownloadFolder` WebMessage handlers, download folder row in Settings → Data tab
+
+---
+
 ## [0.1.5] — 2026-06-09
 
 ### Changed

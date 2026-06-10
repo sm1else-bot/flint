@@ -12,6 +12,7 @@ public partial class Form1 : Form
     private const string HistoryAddress = "flint://history";
     private const string BookmarksAddress = "flint://bookmarks";
     private const string SettingsAddress = "flint://settings";
+    private const string DownloadsAddress = "flint://downloads";
     private readonly BrowserStore store;
     private readonly TextBox addressBox = new();
     private readonly GlassButton backButton;
@@ -21,6 +22,7 @@ public partial class Form1 : Form
     private readonly ToolTip toolTip = new();
     private readonly List<TabEntry> tabs = new();
     private readonly Stack<string> closedTabUrls = new();
+    private readonly List<DownloadEntry> downloads = new();
     private int activeTabIndex = -1;
     private CoreWebView2Environment? sharedEnvironment;
     private FlowLayoutPanel tabStrip = null!;
@@ -123,7 +125,7 @@ public partial class Form1 : Form
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 136));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 176));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 208));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132));
 
         GlassButton brandButton = CreateButton("");
@@ -181,17 +183,22 @@ public partial class Form1 : Form
         historyButton.Image = HistoryIcon();
         GlassButton bookmarksButton = CreateButton("");
         bookmarksButton.Image = BookmarksIcon();
+        GlassButton downloadsButton = CreateButton("");
+        downloadsButton.Image = DownloadsIcon();
         settingsButton.Click += (_, _) => ShowSettings();
         historyButton.Click += (_, _) => ShowHistory();
         bookmarksButton.Click += (_, _) => ShowBookmarks();
+        downloadsButton.Click += (_, _) => ShowDownloads();
         bookmarkButton.Click += (_, _) => ToggleCurrentBookmark();
         toolTip.SetToolTip(bookmarkButton, "Bookmark this page");
         toolTip.SetToolTip(bookmarksButton, "Bookmarks");
         toolTip.SetToolTip(historyButton, "History");
         toolTip.SetToolTip(settingsButton, "Settings");
+        toolTip.SetToolTip(downloadsButton, "Downloads");
         actions.Controls.Add(settingsButton);
         actions.Controls.Add(historyButton);
         actions.Controls.Add(bookmarksButton);
+        actions.Controls.Add(downloadsButton);
         actions.Controls.Add(bookmarkButton);
         grid.Controls.Add(actions, 3, 0);
 
@@ -326,6 +333,7 @@ public partial class Form1 : Form
         s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Flint/1.0";
 
         tab.View.CoreWebView2.WebMessageReceived += WebMessageReceived;
+        tab.View.CoreWebView2.DownloadStarting += CoreWebView2_DownloadStarting;
         tab.View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
         tab.View.CoreWebView2.WebResourceRequested += (_, e) =>
         {
@@ -543,6 +551,7 @@ public partial class Form1 : Form
             case Keys.Control | Keys.B: ShowBookmarks(); return true;
             case Keys.Control | Keys.Oemcomma: ShowSettings(); return true;
             case Keys.Alt | Keys.Home: ShowHome(); return true;
+            case Keys.Control | Keys.J: ShowDownloads(); return true;
         }
         return base.ProcessCmdKey(ref msg, keyData);
     }
@@ -636,6 +645,19 @@ public partial class Form1 : Form
                     AdBlocker.Enabled = store.Profile.AdBlockEnabled;
                     store.Save();
                     break;
+                case "openFile":
+                    string filePath = GetString(root, "path");
+                    if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            { FileName = filePath, UseShellExecute = true });
+                    break;
+                case "removeDownload":
+                    downloads.RemoveAll(d => d.Id == GetString(root, "id"));
+                    ShowDownloads();
+                    break;
+                case "changeDownloadFolder":
+                    ChangeDownloadFolder();
+                    break;
             }
         }
         catch
@@ -674,6 +696,12 @@ public partial class Form1 : Form
         if (input.Equals(SettingsAddress, StringComparison.OrdinalIgnoreCase))
         {
             ShowSettings();
+            return;
+        }
+
+        if (input.Equals(DownloadsAddress, StringComparison.OrdinalIgnoreCase))
+        {
+            ShowDownloads();
             return;
         }
 
@@ -740,6 +768,9 @@ public partial class Form1 : Form
     private void ShowSettings() =>
         ShowInternalPage(SettingsAddress, ShellPages.Settings(store.Profile));
 
+    private void ShowDownloads() =>
+        ShowInternalPage(DownloadsAddress, ShellPages.Downloads(downloads, store.Profile.DownloadFolder));
+
     private void ShowInternalPage(string address, string html)
     {
         if (!browserReady || activeTabIndex < 0)
@@ -761,6 +792,7 @@ public partial class Form1 : Form
         if (addr == HistoryAddress) ShowHistory();
         else if (addr == BookmarksAddress) ShowBookmarks();
         else if (addr == SettingsAddress) ShowSettings();
+        else if (addr == DownloadsAddress) ShowDownloads();
         else ShowHome();
     }
 
@@ -790,6 +822,74 @@ public partial class Form1 : Form
         toast.Show(this);
     }
 
+    private void ChangeDownloadFolder()
+    {
+        using var dlg = new FolderBrowserDialog
+        {
+            Description = "Select download folder",
+            SelectedPath = store.Profile.DownloadFolder,
+            UseDescriptionForTitle = true
+        };
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            store.Profile.DownloadFolder = dlg.SelectedPath;
+            store.Save();
+            ShowDownloads();
+        }
+    }
+
+    private void CoreWebView2_DownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
+    {
+        string filename = Path.GetFileName(e.ResultFilePath);
+        if (string.IsNullOrWhiteSpace(filename)) filename = "download";
+        string folder = store.Profile.DownloadFolder;
+        Directory.CreateDirectory(folder);
+        string dest = Path.Combine(folder, filename);
+        if (File.Exists(dest))
+        {
+            string nameOnly = Path.GetFileNameWithoutExtension(filename);
+            string ext = Path.GetExtension(filename);
+            int n = 1;
+            do { dest = Path.Combine(folder, $"{nameOnly} ({n++}){ext}"); }
+            while (File.Exists(dest));
+        }
+        e.ResultFilePath = dest;
+        e.Handled = true;
+
+        var entry = new DownloadEntry
+        {
+            FileName = Path.GetFileName(dest),
+            FilePath = dest,
+            Url = e.DownloadOperation.Uri,
+            TotalBytes = (long)(e.DownloadOperation.TotalBytesToReceive ?? 0UL)
+        };
+        downloads.Insert(0, entry);
+
+        var op = e.DownloadOperation;
+        op.BytesReceivedChanged += (_, _) =>
+        {
+            entry.ReceivedBytes = (long)op.BytesReceived;
+            if (op.TotalBytesToReceive.HasValue)
+                entry.TotalBytes = (long)op.TotalBytesToReceive.Value;
+        };
+        op.StateChanged += (_, _) =>
+        {
+            entry.State = op.State switch
+            {
+                CoreWebView2DownloadState.Completed => "Complete",
+                CoreWebView2DownloadState.Interrupted =>
+                    op.InterruptReason == CoreWebView2DownloadInterruptReason.UserCanceled
+                        ? "Cancelled" : "Failed",
+                _ => "In Progress"
+            };
+            if (op.State == CoreWebView2DownloadState.Completed)
+            {
+                entry.ReceivedBytes = entry.TotalBytes;
+                BeginInvoke(() => ShowToast($"↓ {entry.FileName} — Complete"));
+            }
+        };
+    }
+
     private string GetCurrentWebUrl()
     {
         if (activeTabIndex < 0) return "";
@@ -807,6 +907,7 @@ public partial class Form1 : Form
                 HistoryAddress => "History - Flint",
                 BookmarksAddress => "Bookmarks - Flint",
                 SettingsAddress => "Settings - Flint",
+                DownloadsAddress => "Downloads - Flint",
                 _ => "Flint"
             };
             return;
@@ -1020,6 +1121,15 @@ public partial class Form1 : Form
         using Pen pen = new(Color.FromArgb(180, 255, 255, 255), 1.5f)
             { LineJoin = LineJoin.Round };
         g.DrawLines(pen, new PointF[] { new(6f, 2f), new(14f, 2f), new(14f, 18f), new(10f, 14.5f), new(6f, 18f), new(6f, 2f) });
+    });
+
+    private static Bitmap DownloadsIcon() => MakeIcon(g =>
+    {
+        using Pen pen = new(Color.FromArgb(180, 255, 255, 255), 1.5f)
+            { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+        g.DrawLine(pen, 10f, 3f, 10f, 14f);
+        g.DrawLines(pen, new PointF[] { new(6f, 10.5f), new(10f, 14.5f), new(14f, 10.5f) });
+        g.DrawLines(pen, new PointF[] { new(4f, 17f), new(16f, 17f) });
     });
 
     private static GlassButton CreateButton(string text)
