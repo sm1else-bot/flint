@@ -23,6 +23,9 @@ public partial class Form1 : Form
     private readonly List<TabEntry> tabs = new();
     private readonly Stack<string> closedTabUrls = new();
     private readonly List<DownloadEntry> downloads = new();
+    private GlassButton downloadsButton = null!;
+    private DownloadDropdownForm? dropdownForm;
+    private readonly Dictionary<string, (Panel FillPanel, Label SizeLabel)> dropdownEntries = new();
     private int activeTabIndex = -1;
     private CoreWebView2Environment? sharedEnvironment;
     private FlowLayoutPanel tabStrip = null!;
@@ -183,12 +186,12 @@ public partial class Form1 : Form
         historyButton.Image = HistoryIcon();
         GlassButton bookmarksButton = CreateButton("");
         bookmarksButton.Image = BookmarksIcon();
-        GlassButton downloadsButton = CreateButton("");
+        downloadsButton = CreateButton("");
         downloadsButton.Image = DownloadsIcon();
         settingsButton.Click += (_, _) => ShowSettings();
         historyButton.Click += (_, _) => ShowHistory();
         bookmarksButton.Click += (_, _) => ShowBookmarks();
-        downloadsButton.Click += (_, _) => ShowDownloads();
+        downloadsButton.Click += (_, _) => ToggleDownloadDropdown();
         bookmarkButton.Click += (_, _) => ToggleCurrentBookmark();
         toolTip.SetToolTip(bookmarkButton, "Bookmark this page");
         toolTip.SetToolTip(bookmarksButton, "Bookmarks");
@@ -838,6 +841,20 @@ public partial class Form1 : Form
         }
     }
 
+    private void ToggleDownloadDropdown()
+    {
+        if (dropdownForm != null && !dropdownForm.IsDisposed)
+        {
+            dropdownForm.Close();
+            dropdownForm = null;
+        }
+        else
+        {
+            dropdownForm = new DownloadDropdownForm(this, downloads, downloadsButton);
+            dropdownForm.Show(this);
+        }
+    }
+
     private void CoreWebView2_DownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
     {
         string filename = Path.GetFileName(e.ResultFilePath);
@@ -865,12 +882,26 @@ public partial class Form1 : Form
         };
         downloads.Insert(0, entry);
 
+        BeginInvoke(() => ShowToast(entry.FileName));
+        downloadsButton.Invalidate();
+
         var op = e.DownloadOperation;
         op.BytesReceivedChanged += (_, _) =>
         {
             entry.ReceivedBytes = (long)op.BytesReceived;
             if (op.TotalBytesToReceive.HasValue)
                 entry.TotalBytes = (long)op.TotalBytesToReceive.Value;
+            BeginInvoke(() =>
+            {
+                if (dropdownEntries.TryGetValue(entry.Id, out var elements))
+                {
+                    double pct = entry.TotalBytes > 0 ? (100.0 * entry.ReceivedBytes / entry.TotalBytes) : 0;
+                    elements.FillPanel.Width = (int)Math.Round(pct * 0.8);
+                    long mb = entry.TotalBytes / (1024 * 1024);
+                    long current = entry.ReceivedBytes / (1024 * 1024);
+                    elements.SizeLabel.Text = $"{current}.0 MB of {mb}.0 MB";
+                }
+            });
         };
         op.StateChanged += (_, _) =>
         {
@@ -882,11 +913,12 @@ public partial class Form1 : Form
                         ? "Cancelled" : "Failed",
                 _ => "In Progress"
             };
-            if (op.State == CoreWebView2DownloadState.Completed)
+            BeginInvoke(() =>
             {
-                entry.ReceivedBytes = entry.TotalBytes;
-                BeginInvoke(() => ShowToast($"↓ {entry.FileName} — Complete"));
-            }
+                downloadsButton.Invalidate();
+                if (dropdownForm != null && !dropdownForm.IsDisposed)
+                    dropdownForm.UpdateDisplay();
+            });
         };
     }
 
@@ -1315,6 +1347,249 @@ public partial class Form1 : Form
             BackColor = Color.Transparent;
             Font = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Point);
             Cursor = Cursors.Hand;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (Parent is FlowLayoutPanel flow && flow.Parent is TableLayoutPanel grid && grid.Parent is Form1 form1)
+            {
+                int activeCount = form1.downloads.Count(d => d.State == "In Progress");
+                if (activeCount > 0)
+                {
+                    const int radius = 8;
+                    int x = Width - radius - 2;
+                    int y = 2;
+                    e.Graphics.FillEllipse(new SolidBrush(Color.FromArgb(0, 212, 255)), x - radius, y, radius * 2, radius * 2);
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    e.Graphics.DrawString(activeCount.ToString(), new Font("Segoe UI", 7f), new SolidBrush(Color.Black), x, y + radius, sf);
+                }
+            }
+        }
+    }
+
+    private sealed class DownloadDropdownForm : Form
+    {
+        private readonly Form1 owner;
+        private readonly List<DownloadEntry> downloads;
+        private readonly GlassButton triggerbtn;
+
+        public DownloadDropdownForm(Form1 owner, List<DownloadEntry> downloads, GlassButton triggerbtn)
+        {
+            this.owner = owner;
+            this.downloads = downloads;
+            this.triggerbtn = triggerbtn;
+
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            BackColor = Color.FromArgb(20, 20, 24);
+            ShowWithoutActivation = false;
+            StartPosition = FormStartPosition.Manual;
+            Size = new Size(320, 400);
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            PositionBelowButton();
+            UpdateDisplay();
+        }
+
+        private void PositionBelowButton()
+        {
+            Point buttonScreenPos = triggerbtn.PointToScreen(new Point(0, triggerbtn.Height));
+            Left = buttonScreenPos.X + triggerbtn.Width - Width;
+            Top = buttonScreenPos.Y + 4;
+        }
+
+        public void UpdateDisplay()
+        {
+            Controls.Clear();
+            owner.dropdownEntries.Clear();
+
+            var recentDownloads = downloads.Take(10).ToList();
+            int y = 0;
+
+            foreach (var entry in recentDownloads)
+            {
+                Panel rowPanel = new()
+                {
+                    Height = 80,
+                    Dock = DockStyle.Top,
+                    BorderStyle = BorderStyle.None,
+                    BackColor = Color.FromArgb(20, 20, 24),
+                    Padding = new Padding(12, 8, 12, 8)
+                };
+
+                Label nameLabel = new()
+                {
+                    Text = entry.FileName.Length > 40 ? entry.FileName.Substring(0, 37) + "..." : entry.FileName,
+                    ForeColor = Color.White,
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 10f),
+                    AutoSize = false,
+                    Bounds = new Rectangle(0, 2, 296, 18),
+                    TextAlign = ContentAlignment.TopLeft
+                };
+                rowPanel.Controls.Add(nameLabel);
+
+                Panel barContainer = new()
+                {
+                    Height = 4,
+                    Width = 296,
+                    Top = 24,
+                    Left = 0,
+                    BackColor = Color.FromArgb(40, 40, 48),
+                    BorderStyle = BorderStyle.None
+                };
+                rowPanel.Controls.Add(barContainer);
+
+                Panel fillPanel = new()
+                {
+                    Height = 4,
+                    Width = 0,
+                    Top = 0,
+                    Left = 0,
+                    BackColor = Color.FromArgb(0, 212, 255),
+                    BorderStyle = BorderStyle.None
+                };
+                barContainer.Controls.Add(fillPanel);
+
+                if (entry.State == "Complete")
+                    fillPanel.Width = 296;
+                else if (entry.State != "Failed" && entry.TotalBytes > 0)
+                    fillPanel.Width = (int)Math.Round(296.0 * entry.ReceivedBytes / entry.TotalBytes);
+                else if (entry.State == "Failed")
+                    barContainer.BackColor = Color.FromArgb(255, 100, 100);
+
+                Label sizeLabel = new()
+                {
+                    ForeColor = Color.FromArgb(200, 200, 200),
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 9f),
+                    AutoSize = false,
+                    Bounds = new Rectangle(0, 32, 200, 14),
+                    TextAlign = ContentAlignment.TopLeft
+                };
+
+                if (entry.TotalBytes > 0)
+                {
+                    long totalMB = entry.TotalBytes / (1024 * 1024);
+                    long currentMB = entry.ReceivedBytes / (1024 * 1024);
+                    sizeLabel.Text = $"{currentMB}.0 MB of {totalMB}.0 MB";
+                }
+                else
+                    sizeLabel.Text = "0.0 MB of 0.0 MB";
+
+                rowPanel.Controls.Add(sizeLabel);
+
+                Label percentLabel = new()
+                {
+                    ForeColor = Color.FromArgb(200, 200, 200),
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 9f),
+                    AutoSize = false,
+                    Bounds = new Rectangle(200, 32, 96, 14),
+                    TextAlign = ContentAlignment.TopRight
+                };
+
+                if (entry.State == "Complete")
+                    percentLabel.Text = "100%";
+                else if (entry.State != "Failed" && entry.TotalBytes > 0)
+                    percentLabel.Text = $"{(100.0 * entry.ReceivedBytes / entry.TotalBytes):F0}%";
+                else
+                    percentLabel.Text = "";
+
+                rowPanel.Controls.Add(percentLabel);
+
+                if (entry.State == "Complete")
+                {
+                    Button openBtn = new()
+                    {
+                        Text = "Open",
+                        Height = 24,
+                        Width = 50,
+                        Top = 52,
+                        Left = 0,
+                        BackColor = Color.FromArgb(40, 40, 48),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Font = new Font("Segoe UI", 9f)
+                    };
+                    openBtn.FlatAppearance.BorderSize = 0;
+                    openBtn.Click += (_, _) =>
+                    {
+                        if (File.Exists(entry.FilePath))
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                                { FileName = entry.FilePath, UseShellExecute = true });
+                    };
+                    rowPanel.Controls.Add(openBtn);
+
+                    Button closeBtn = new()
+                    {
+                        Text = "×",
+                        Height = 24,
+                        Width = 24,
+                        Top = 52,
+                        Left = 56,
+                        BackColor = Color.FromArgb(40, 40, 48),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Font = new Font("Segoe UI", 10f)
+                    };
+                    closeBtn.FlatAppearance.BorderSize = 0;
+                    closeBtn.Click += (_, _) =>
+                    {
+                        downloads.Remove(entry);
+                        owner.dropdownEntries.Remove(entry.Id);
+                        UpdateDisplay();
+                    };
+                    rowPanel.Controls.Add(closeBtn);
+                }
+
+                Controls.Add(rowPanel);
+                owner.dropdownEntries[entry.Id] = (fillPanel, sizeLabel);
+                y += 80;
+            }
+
+            Panel footerPanel = new()
+            {
+                Height = 40,
+                Dock = DockStyle.Bottom,
+                BackColor = Color.FromArgb(28, 28, 32),
+                BorderStyle = BorderStyle.None,
+                Padding = new Padding(12, 8, 12, 8)
+            };
+
+            Button showAllBtn = new()
+            {
+                Text = "Show all downloads",
+                BackColor = Color.FromArgb(40, 40, 48),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f),
+                Dock = DockStyle.Fill
+            };
+            showAllBtn.FlatAppearance.BorderSize = 0;
+            showAllBtn.Click += (_, _) =>
+            {
+                owner.ShowDownloads();
+                Close();
+            };
+            footerPanel.Controls.Add(showAllBtn);
+            Controls.Add(footerPanel);
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            Close();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+            owner.dropdownForm = null;
         }
     }
 

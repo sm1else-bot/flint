@@ -484,14 +484,13 @@ public static class ShellPages
             ? """<tr><td colspan="5" class="dl-empty">No downloads yet.</td></tr>"""
             : string.Join(Environment.NewLine, downloads.Select(entry =>
             {
-                double pct = entry.TotalBytes > 0 ? Math.Clamp(100.0 * entry.ReceivedBytes / entry.TotalBytes, 0, 100) : 0;
                 string stateCell;
                 if (entry.State == "Complete")
                     stateCell = $"""<span class="dl-state-ok">Complete</span> <button class="small-action" data-open-file="{Attr(entry.FilePath)}">Open</button>""";
                 else if (entry.State is "Failed" or "Cancelled")
                     stateCell = $"""<span class="dl-state-err">{Html(entry.State)}</span>""";
                 else
-                    stateCell = $"""<div class="dl-bar-wrap"><div class="dl-bar-fill" style="width:{pct:F0}%"></div></div>""";
+                    stateCell = "";
 
                 return $$"""
                   <tr class="dl-row">
