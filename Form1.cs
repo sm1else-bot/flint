@@ -586,12 +586,89 @@ public partial class Form1 : Form
         titleBtn.FlatAppearance.MouseOverBackColor = Color.Transparent;
         titleBtn.Click += (_, _) => SwitchToTab(tabs.IndexOf(tab));
 
+        void ShowTabMenu(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+            int idx = tabs.IndexOf(tab);
+            if (idx < 0) return;
+            BuildTabContextMenu(idx).Show(Cursor.Position);
+        }
+        panel.MouseDown += ShowTabMenu;
+        titleBtn.MouseDown += ShowTabMenu;
+
         panel.Controls.Add(closeBtn);
         panel.Controls.Add(titleBtn);
 
         tab.TitleButton = titleBtn;
         tab.TabPanel = panel;
         return panel;
+    }
+
+    private ContextMenuStrip BuildTabContextMenu(int tabIndex)
+    {
+        var tab = tabs[tabIndex];
+        var menu = new ContextMenuStrip
+        {
+            BackColor = Color.FromArgb(20, 20, 24),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Point),
+            Renderer = new DarkMenuRenderer()
+        };
+
+        var newTabItem = MakeMenuItem("New tab");
+        newTabItem.Click += (_, _) => _ = OpenNewTab();
+
+        var reloadItem = MakeMenuItem("Reload tab");
+        reloadItem.Click += (_, _) =>
+        {
+            if (tabIndex == activeTabIndex) ReloadCurrent();
+            else tab.View.CoreWebView2?.Reload();
+        };
+
+        var muteItem = MakeMenuItem(tab.IsMuted ? "Unmute tab" : "Mute tab");
+        muteItem.Click += (_, _) =>
+        {
+            tab.IsMuted = !tab.IsMuted;
+            if (tab.View.CoreWebView2 != null)
+                tab.View.CoreWebView2.IsMuted = tab.IsMuted;
+        };
+
+        var closeItem = MakeMenuItem("Close tab");
+        closeItem.Click += (_, _) => CloseTab(tabIndex);
+
+        var copyItem = MakeMenuItem("Copy address");
+        copyItem.Click += (_, _) =>
+        {
+            string url = tab.ShowingInternal
+                ? tab.InternalAddress
+                : tab.View.Source?.AbsoluteUri ?? "";
+            if (!string.IsNullOrWhiteSpace(url))
+                Clipboard.SetText(url);
+        };
+
+        var reopenItem = MakeMenuItem("Reopen last closed tab");
+        reopenItem.Click += (_, _) => _ = ReopenClosedTab();
+
+        menu.Items.Add(newTabItem);
+        menu.Items.Add(reloadItem);
+        menu.Items.Add(muteItem);
+        menu.Items.Add(closeItem);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(copyItem);
+        menu.Items.Add(reopenItem);
+        return menu;
+    }
+
+    private static ToolStripMenuItem MakeMenuItem(string text)
+    {
+        var item = new ToolStripMenuItem(text)
+        {
+            BackColor = Color.FromArgb(20, 20, 24),
+            ForeColor = Color.White
+        };
+        item.MouseEnter += (_, _) => item.BackColor = Color.FromArgb(45, 255, 255, 255);
+        item.MouseLeave += (_, _) => item.BackColor = Color.FromArgb(20, 20, 24);
+        return item;
     }
 
     private void UpdateTabColors()
@@ -1889,6 +1966,7 @@ public partial class Form1 : Form
         public bool ShowingInternal { get; set; }
         public string InternalAddress { get; set; } = "";
         public bool IsLoading { get; set; }
+        public bool IsMuted { get; set; }
         public System.Windows.Forms.Timer? SparkTimer { get; set; }
         public int SparkFrame { get; set; }
     }
@@ -1970,5 +2048,34 @@ public partial class Form1 : Form
             if (disposing) timer.Dispose();
             base.Dispose(disposing);
         }
+    }
+
+    private sealed class DarkMenuRenderer : ToolStripProfessionalRenderer
+    {
+        public DarkMenuRenderer() : base(new DarkColorTable()) { }
+
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            using var b = new SolidBrush(e.Item.BackColor);
+            e.Graphics.FillRectangle(b, new Rectangle(Point.Empty, e.Item.Size));
+        }
+
+        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+        {
+            using var pen = new Pen(Color.FromArgb(50, 255, 255, 255));
+            e.Graphics.DrawRectangle(pen, 0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
+        }
+    }
+
+    private sealed class DarkColorTable : ProfessionalColorTable
+    {
+        public override Color ToolStripDropDownBackground => Color.FromArgb(20, 20, 24);
+        public override Color ImageMarginGradientBegin => Color.FromArgb(20, 20, 24);
+        public override Color ImageMarginGradientMiddle => Color.FromArgb(20, 20, 24);
+        public override Color ImageMarginGradientEnd => Color.FromArgb(20, 20, 24);
+        public override Color SeparatorDark => Color.FromArgb(50, 255, 255, 255);
+        public override Color SeparatorLight => Color.Transparent;
+        public override Color MenuBorder => Color.FromArgb(50, 255, 255, 255);
+        public override Color MenuItemBorder => Color.Transparent;
     }
 }

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Tab context menu** — right-clicking any tab button shows a dark-styled context menu (BackColor `#14141A`, white text, semi-transparent hover) with: New tab, Reload tab, Mute/Unmute tab, Close tab, a separator, Copy address, and Reopen last closed tab. All actions target the right-clicked tab specifically, not the active tab. Mute state is tracked per `TabEntry.IsMuted` and synced to `CoreWebView2.IsMuted`.
+
 ---
 
 ## [0.2.6] — 2026-06-10
