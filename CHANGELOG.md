@@ -4,6 +4,26 @@
 
 ---
 
+## [0.1.3] — 2026-06-09
+
+### Added
+- **History page redesign** — scrapped card layout entirely; replaced with a compact full-width table: title / URL / timestamp columns with ellipsis truncation, 40px row height, subtle 1px row separators (`rgba(255,255,255,0.06)`), no rounded cards or heavy padding; header row has `HISTORY` left, visit count centred, `Clear all` right
+- **New keyboard shortcuts**:
+  - `Ctrl+H` — open History
+  - `Ctrl+D` — bookmark / unbookmark current page
+  - `Ctrl+B` — open Bookmarks
+  - `Ctrl+,` — open Settings
+  - `Alt+Home` — go to home page
+- **Bookmark toast notification** — borderless floating toast appears bottom-centre of the window when bookmarking or unbookmarking; shows `✓ Bookmarked` or `✓ Removed from bookmarks`; fades in over 200 ms, holds for 1500 ms, fades out over 200 ms; dark rounded pill (`#1E1E1E`), never steals focus (`ShowWithoutActivation = true`)
+- **Keyboard shortcuts work from launch** — added `IMessageFilter` (`KeyFilter`) registered at the message pump level so all shortcuts are intercepted immediately, even before any navigation; previously shortcuts were dead on the home page until a real website was visited because `KeyPreview` does not intercept messages destined for native WebView2 child windows
+
+### Fixed
+- **Toast text invisible** — `Color.Transparent` on a `Label` inside a form with animated `Opacity` breaks GDI text rendering on layered windows; fixed by setting label `BackColor` to match the form background (`Color.FromArgb(30, 30, 30)`)
+- **Toast uneven padding** — `TextRenderer.MeasureText` called with `Size.Empty` constrained measurement and produced an incorrect width; switched to `new Size(int.MaxValue, int.MaxValue)` with `TextFormatFlags.NoPadding` for exact text bounds, then applied symmetric 20 px left/right padding
+- **Home page content clips at narrow window widths** — `position: fixed` corner watermark overlapped the search bar below ~600 px; added responsive CSS to hide `.corner` elements below 600 px wide and scale cards down at narrower breakpoints; changed body `overflow: hidden` to `overflow-x: hidden` so vertical scrolling is not suppressed
+
+---
+
 ## [0.1.2] — 2026-06-09
 
 ### Added

@@ -51,6 +51,7 @@ public partial class Form1 : Form
         bookmarkButton.Image = BookmarkIcon();
 
         BuildShell();
+        Application.AddMessageFilter(new KeyFilter(this));
     }
 
     protected override CreateParams CreateParams
@@ -537,6 +538,11 @@ public partial class Form1 : Form
             case Keys.Control | Keys.D7: if (tabs.Count >= 7) SwitchToTab(6); return true;
             case Keys.Control | Keys.D8: if (tabs.Count >= 8) SwitchToTab(7); return true;
             case Keys.Control | Keys.D9: if (tabs.Count >= 1) SwitchToTab(tabs.Count - 1); return true;
+            case Keys.Control | Keys.H: ShowHistory(); return true;
+            case Keys.Control | Keys.D: ToggleCurrentBookmark(); return true;
+            case Keys.Control | Keys.B: ShowBookmarks(); return true;
+            case Keys.Control | Keys.Oemcomma: ShowSettings(); return true;
+            case Keys.Alt | Keys.Home: ShowHome(); return true;
         }
         return base.ProcessCmdKey(ref msg, keyData);
     }
@@ -769,8 +775,19 @@ public partial class Form1 : Form
     {
         string url = GetCurrentWebUrl();
         if (string.IsNullOrWhiteSpace(url)) return;
+        bool wasBookmarked = store.IsBookmarked(url);
         store.ToggleBookmark(url, ActiveView.CoreWebView2.DocumentTitle);
         UpdateBookmarkButton();
+        ShowToast(wasBookmarked ? "✓ Removed from bookmarks" : "✓ Bookmarked");
+    }
+
+    private void ShowToast(string message)
+    {
+        var toast = new ToastForm(message);
+        toast.Location = new Point(
+            Left + (Width - toast.Width) / 2,
+            Bottom - toast.Height - 24);
+        toast.Show(this);
     }
 
     private string GetCurrentWebUrl()
@@ -1238,5 +1255,100 @@ public partial class Form1 : Form
         public string Title { get; set; } = "New Tab";
         public bool ShowingInternal { get; set; }
         public string InternalAddress { get; set; } = "";
+    }
+
+    private sealed class KeyFilter : IMessageFilter
+    {
+        private const int WmKeyDown = 0x0100;
+        private const int WmSysKeyDown = 0x0104;
+        private readonly Form1 owner;
+        public KeyFilter(Form1 owner) => this.owner = owner;
+        public bool PreFilterMessage(ref Message m)
+        {
+            if ((m.Msg == WmKeyDown || m.Msg == WmSysKeyDown) && owner.ContainsFocus)
+            {
+                var key = (Keys)(int)m.WParam | ModifierKeys;
+                return owner.ProcessCmdKey(ref m, key);
+            }
+            return false;
+        }
+    }
+
+    private sealed class ToastForm : Form
+    {
+        private const int FadeMs = 200;
+        private const int StayMs = 1500;
+        private const int Tick = 16;
+
+        private readonly System.Windows.Forms.Timer timer = new() { Interval = Tick };
+        private int elapsed;
+        private int phase; // 0 = fade in, 1 = stay, 2 = fade out
+
+        public ToastForm(string message)
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            BackColor = Color.FromArgb(30, 30, 30);
+            StartPosition = FormStartPosition.Manual;
+            ShowInTaskbar = false;
+            TopMost = true;
+            Opacity = 0;
+
+            var font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Point);
+            var textSize = TextRenderer.MeasureText(message, font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
+            ClientSize = new Size(textSize.Width + 40, textSize.Height + 24);
+
+            Controls.Add(new Label
+            {
+                Text = message,
+                ForeColor = Color.White,
+                Font = font,
+                BackColor = Color.FromArgb(30, 30, 30),
+                AutoSize = false,
+                Bounds = new Rectangle(20, 12, textSize.Width, textSize.Height)
+            });
+
+            timer.Tick += OnTick;
+        }
+
+        protected override bool ShowWithoutActivation => true;
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            using var path = new GraphicsPath();
+            const int r = 10;
+            path.AddArc(0, 0, r * 2, r * 2, 180, 90);
+            path.AddArc(Width - r * 2, 0, r * 2, r * 2, 270, 90);
+            path.AddArc(Width - r * 2, Height - r * 2, r * 2, r * 2, 0, 90);
+            path.AddArc(0, Height - r * 2, r * 2, r * 2, 90, 90);
+            path.CloseFigure();
+            Region = new Region(path);
+            timer.Start();
+        }
+
+        private void OnTick(object? sender, EventArgs e)
+        {
+            elapsed += Tick;
+            switch (phase)
+            {
+                case 0:
+                    Opacity = Math.Min(1.0, elapsed / (double)FadeMs);
+                    if (elapsed >= FadeMs) { phase = 1; elapsed = 0; }
+                    break;
+                case 1:
+                    if (elapsed >= StayMs) { phase = 2; elapsed = 0; }
+                    break;
+                case 2:
+                    Opacity = Math.Max(0.0, 1.0 - elapsed / (double)FadeMs);
+                    if (elapsed >= FadeMs) { timer.Stop(); Close(); }
+                    break;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) timer.Dispose();
+            base.Dispose(disposing);
+        }
     }
 }

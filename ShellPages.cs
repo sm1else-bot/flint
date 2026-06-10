@@ -29,7 +29,7 @@ public static class ShellPages
 
         body {
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
         }
 
         .corner {
@@ -132,6 +132,17 @@ public static class ShellPages
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.50);
         }
+
+        @media (max-width: 600px) {
+          .corner { display: none; }
+          .card { width: 20vw; height: 120px; padding: 18px 0 14px; }
+          .card svg { width: 22px; height: 22px; }
+        }
+
+        @media (max-width: 380px) {
+          .cards { gap: 6px; }
+          .card { width: 18vw; }
+        }
       </style>
     </head>
     <body>
@@ -215,31 +226,126 @@ public static class ShellPages
     public static string History(IReadOnlyList<HistoryItem> history)
     {
         string rows = history.Count == 0
-            ? """<div class="empty">No history yet.</div>"""
+            ? """<tr><td colspan="4" class="h-empty">No history yet.</td></tr>"""
             : string.Join(Environment.NewLine, history.Select(item => $$"""
-              <article class="list-row">
-                <button class="row-main" data-url="{{Attr(item.Url)}}">
-                  <strong>{{Html(item.Title)}}</strong>
-                  <span>{{Html(item.Url)}}</span>
-                  <small>{{Html(FormatTimestamp(item.LastVisitedUtc))}}</small>
-                </button>
-                <button class="small-action" data-delete-history="{{Attr(item.Id)}}">Delete</button>
-              </article>
+              <tr class="h-row">
+                <td class="h-title"><button class="h-link" data-url="{{Attr(item.Url)}}">{{Html(item.Title)}}</button></td>
+                <td class="h-url"><button class="h-link h-url-text" data-url="{{Attr(item.Url)}}">{{Html(item.Url)}}</button></td>
+                <td class="h-time">{{Html(FormatTimestamp(item.LastVisitedUtc))}}</td>
+                <td class="h-del"><button class="h-delete" data-delete-history="{{Attr(item.Id)}}">×</button></td>
+              </tr>
               """));
 
         return Page("History", $$"""
-        <main class="page-shell">
-          <header class="page-header">
-            <div>
-              <h1>History</h1>
-              <p>{{history.Count.ToString(CultureInfo.InvariantCulture)}} visits</p>
-            </div>
-            <button class="primary-action" data-action="clearHistory">Clear history</button>
-          </header>
-          <section class="list-stack">
-            {{rows}}
-          </section>
-        </main>
+        <style>
+          .h-shell {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px 48px;
+          }
+          .h-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .h-header h1 {
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            flex-shrink: 0;
+          }
+          .h-count {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255,255,255,0.20);
+            letter-spacing: 0.05em;
+          }
+          .h-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          .h-row {
+            height: 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+          .h-row:last-child { border-bottom: none; }
+          .h-title {
+            width: 35%;
+            overflow: hidden;
+            padding: 0 10px 0 0;
+          }
+          .h-url {
+            width: 40%;
+            overflow: hidden;
+            padding: 0 10px;
+          }
+          .h-time {
+            width: 100px;
+            text-align: right;
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            white-space: nowrap;
+            padding: 0 8px 0 0;
+          }
+          .h-del {
+            width: 32px;
+            text-align: center;
+          }
+          .h-link {
+            display: block;
+            width: 100%;
+            background: transparent;
+            padding: 0;
+            text-align: left;
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            color: rgba(255,255,255,0.80);
+          }
+          .h-url-text { color: rgba(255,255,255,0.30); font-size: 11px; }
+          .h-link:hover { color: rgba(255,255,255,1); }
+          .h-url-text:hover { color: rgba(255,255,255,0.55); }
+          .h-delete {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            color: rgba(255,255,255,0.40);
+            cursor: pointer;
+            padding: 0;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 6px;
+          }
+          .h-delete:hover { color: rgba(255,255,255,0.80); }
+          .h-empty {
+            padding: 32px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.25);
+            text-align: center;
+          }
+        </style>
+        <div class="h-shell">
+          <div class="h-header">
+            <h1>History</h1>
+            <span class="h-count">{{history.Count.ToString(CultureInfo.InvariantCulture)}} visits</span>
+            <button class="primary-action" data-action="clearHistory">Clear all</button>
+          </div>
+          <table class="h-table">
+            <tbody>
+              {{rows}}
+            </tbody>
+          </table>
+        </div>
         """);
     }
 
