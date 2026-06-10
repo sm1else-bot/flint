@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic`, ensuring consistent size regardless of what the server returns.
+
 ### Changed
 - **User agent** — simplified to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flint/1.0 Safari/537.36`, dropping the Chrome version token.
 

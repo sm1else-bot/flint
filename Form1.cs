@@ -1522,7 +1522,12 @@ public partial class Form1 : Form
                 $"https://www.google.com/s2/favicons?domain={host}&sz=16");
             using var ms = new MemoryStream(bytes);
             using var raw = new Bitmap(ms);
-            var bmp = new Bitmap(raw, new Size(16, 16));
+            var bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(raw, 0, 0, 16, 16);
+            }
             _faviconCache[host] = bmp;
             if (tabs.Contains(tab) && !tab.TitleButton.IsDisposed)
                 tab.TitleButton.Image = bmp;
