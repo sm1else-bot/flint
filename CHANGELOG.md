@@ -4,6 +4,15 @@
 
 ---
 
+## [0.2.3] — 2026-06-10
+
+### Changed
+- **Photo tile — rectangular frame** — removed rounded corners (`border-radius:0`) so the tile looks like a proper photo print, not a card.
+- **Photo tile — free stacking** — photo tiles no longer participate in the overlap grid; they can be placed and dragged on top of each other freely. The last-clicked photo rises to the top (z-order is persisted).
+- **Photo tile — aspect-ratio resize** — a drag handle at the bottom-right corner lets you resize the photo while locking the original aspect ratio. Size is stored in pixels and survives reload.
+
+---
+
 ## [0.2.2] — 2026-06-10
 
 ### Fixed

@@ -273,10 +273,11 @@ public static class ShellPages
           background:#fff!important;border:none!important;
           backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
           box-shadow:0 6px 24px rgba(0,0,0,.5)!important;
+          border-radius:0!important;
         }
         .photo-inner{
           position:absolute;top:8px;left:8px;right:8px;bottom:30px;
-          overflow:hidden;background:rgba(0,0,0,0.3);border-radius:2px;
+          overflow:hidden;background:rgba(0,0,0,0.3);
         }
         .photo-img{
           width:100%;height:100%;object-fit:contain;display:block;
@@ -288,6 +289,12 @@ public static class ShellPages
           font-family:system-ui;outline:none;padding:0 8px;
           white-space:nowrap;overflow:hidden;
         }
+        .rh-photo{
+          position:absolute;right:0;bottom:28px;width:18px;height:18px;
+          cursor:nwse-resize;display:flex;align-items:center;justify-content:center;
+          color:rgba(0,0,0,.25);z-index:1;
+        }
+        .rh-photo:hover{color:rgba(0,0,0,.55)}
         /* Ghost */
         .ghost{
           position:absolute;border:1px dashed rgba(255,255,255,.3);
@@ -352,13 +359,15 @@ public static class ShellPages
         };
         const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4} };
 
-        let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm;
+        let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm, photoZ = 600;
 
         function claim(t) {
+          if (t.type === 'photo') return;
           for (let x=t.gridX; x<t.gridX+t.gridW; x++)
             for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.add(K(x,y));
         }
         function release(t) {
+          if (t.type === 'photo') return;
           for (let x=t.gridX; x<t.gridX+t.gridW; x++)
             for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.delete(K(x,y));
         }
@@ -804,6 +813,11 @@ public static class ShellPages
         function mkPhoto(el, t) {
           if (!t.content?.url) { mkPhotoForm(el, t); return; }
           el.classList.add('photo-tile');
+          if (t.content.px != null) el.style.left   = t.content.px + 'px';
+          if (t.content.py != null) el.style.top    = t.content.py + 'px';
+          if (t.content.pw != null) el.style.width  = t.content.pw + 'px';
+          if (t.content.ph != null) el.style.height = t.content.ph + 'px';
+          if (t.content.z  != null) { el.style.zIndex = t.content.z; photoZ = Math.max(photoZ, t.content.z); }
           const rot = t.content.rotate || 0;
           el.style.transform = 'rotate(' + rot + 'deg)';
           const inner = document.createElement('div');
@@ -818,6 +832,11 @@ public static class ShellPages
           cap.addEventListener('input', () => { t.content.caption = cap.textContent; sched(); });
           cap.addEventListener('mousedown', e => e.stopPropagation());
           el.appendChild(cap);
+          const rh = document.createElement('div');
+          rh.className = 'rh-photo';
+          rh.innerHTML = '<svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="10" x2="10" y2="2"/><line x1="6" y1="10" x2="10" y2="6"/></svg>';
+          setupPhotoResize(rh, el, t);
+          el.appendChild(rh);
           // dark × for white background
           setTimeout(() => {
             const xb = el.querySelector('.tile-x');
@@ -856,11 +875,17 @@ public static class ShellPages
         }
 
         // ── Drag ─────────────────────────────────────────────────────
+        function bringToFront(el, t) {
+          el.style.zIndex = ++photoZ;
+          t.content.z = photoZ;
+        }
+
         function setupDrag(el, t) {
           let wasDragged = false;
           el.addEventListener('mousedown', e => {
-            if (e.target.closest('.tile-x,.note-body,.rh,.sc-form,.label-body,.photo-cap,.tmr-mode,.tmr-btns,.tmr-dur,.recent-hdr,.recent-list,.ln,.ln-rot')) return;
+            if (e.target.closest('.tile-x,.note-body,.rh,.rh-photo,.sc-form,.label-body,.photo-cap,.tmr-mode,.tmr-btns,.tmr-dur,.recent-hdr,.recent-list,.ln,.ln-rot')) return;
             e.preventDefault();
+            if (t.type === 'photo') bringToFront(el, t);
             const sx = e.clientX, sy = e.clientY;
             const sl = parseInt(el.style.left)||0, st = parseInt(el.style.top)||0;
             let moved = false; wasDragged = false;
@@ -868,7 +893,8 @@ public static class ShellPages
               const dx = ev.clientX-sx, dy = ev.clientY-sy;
               if (!moved && Math.hypot(dx,dy) > 5) {
                 moved = true; wasDragged = true;
-                el.classList.add('dragging'); release(t);
+                el.classList.add('dragging');
+                if (t.type !== 'photo') release(t);
               }
               if (moved) {
                 el.style.left = Math.max(0, sl+dx) + 'px';
@@ -880,12 +906,18 @@ public static class ShellPages
               document.removeEventListener('mouseup', mu);
               if (!moved) return;
               el.classList.remove('dragging');
-              const ngx = p2g(parseInt(el.style.left)||0);
-              const ngy = p2g(parseInt(el.style.top)||0);
-              if (free(ngx, ngy, t.gridW, t.gridH)) { t.gridX = ngx; t.gridY = ngy; }
-              el.style.left = g2p(t.gridX) + 'px';
-              el.style.top  = g2p(t.gridY) + 'px';
-              claim(t); sched();
+              if (t.type === 'photo') {
+                t.content.px = parseInt(el.style.left)||0;
+                t.content.py = parseInt(el.style.top)||0;
+                sched();
+              } else {
+                const ngx = p2g(parseInt(el.style.left)||0);
+                const ngy = p2g(parseInt(el.style.top)||0);
+                if (free(ngx, ngy, t.gridW, t.gridH)) { t.gridX = ngx; t.gridY = ngy; }
+                el.style.left = g2p(t.gridX) + 'px';
+                el.style.top  = g2p(t.gridY) + 'px';
+                claim(t); sched();
+              }
             };
             document.addEventListener('mousemove', mm);
             document.addEventListener('mouseup', mu);
@@ -924,13 +956,38 @@ public static class ShellPages
           });
         }
 
+        function setupPhotoResize(handle, el, t) {
+          handle.addEventListener('mousedown', e => {
+            e.preventDefault(); e.stopPropagation();
+            bringToFront(el, t);
+            const sw = parseInt(el.style.width) || el.offsetWidth;
+            const sh = parseInt(el.style.height) || el.offsetHeight;
+            const aspect = sw / sh;
+            const sx = e.clientX;
+            const mm = ev => {
+              const nw = Math.max(96, sw + (ev.clientX - sx));
+              el.style.width  = nw + 'px';
+              el.style.height = Math.round(nw / aspect) + 'px';
+            };
+            const mu = () => {
+              document.removeEventListener('mousemove', mm);
+              document.removeEventListener('mouseup', mu);
+              t.content.pw = parseInt(el.style.width);
+              t.content.ph = parseInt(el.style.height);
+              sched();
+            };
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
+          });
+        }
+
         // ── Add / Remove ─────────────────────────────────────────────
         function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
         function addTile(type, gx, gy) {
           const sz = SETUP[type] || DEF[type];
           const gw = sz.w, gh = sz.h;
-          if (!free(gx, gy, gw, gh)) return false;
+          if (type !== 'photo' && !free(gx, gy, gw, gh)) return false;
           const t = { id:uid(), type, gridX:gx, gridY:gy, gridW:gw, gridH:gh, content:{} };
           if (type === 'line') t.content = { orientation:'h', thickness:1 };
           tiles.push(t); claim(t); mkTile(t); sched(); syncHint();
