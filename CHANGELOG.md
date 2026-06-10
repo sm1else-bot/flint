@@ -4,6 +4,24 @@
 
 ---
 
+## [0.1.5] — 2026-06-09
+
+### Changed
+- **Publish trimming enabled** — added `PublishTrimmed=true`, `TrimMode=partial` to `Flint.csproj`; reduces single-file exe from 148 MB to 100 MB by stripping unused assemblies from the self-contained bundle
+
+---
+
+## [0.1.4] — 2026-06-09
+
+### Added
+- **Download manager** — `CoreWebView2.DownloadStarting` intercepts all downloads; suppresses the default WebView2 download UI; saves files to a configurable download folder (defaults to `~/Downloads`); deduplicates filenames automatically (appends `(1)`, `(2)`, etc.)
+- **Downloads page** (`flint://downloads`, `Ctrl+J`) — full-width table showing filename, progress bar (cyan fill while in progress), URL, file size, start time, state, and per-entry Open / Remove buttons; Open launches the file with the default OS handler
+- **Download folder setting** — shown in Settings → Data tab alongside a `Change` button that opens a `FolderBrowserDialog`; persisted in `profile.json`
+- **`DownloadEntry` model** — tracks Id, FileName, FilePath, Url, TotalBytes, ReceivedBytes, State, StartedAt
+- **Download complete toast** — `↓ filename — Complete` toast fires when each download finishes
+
+---
+
 ## [0.1.3] — 2026-06-09
 
 ### Added
