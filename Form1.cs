@@ -1383,10 +1383,11 @@ public partial class Form1 : Form
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(20, 20, 24);
-            ShowWithoutActivation = false;
             StartPosition = FormStartPosition.Manual;
             Size = new Size(320, 400);
         }
+
+        protected override bool ShowWithoutActivation => false;
 
         protected override void OnLoad(EventArgs e)
         {
