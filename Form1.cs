@@ -90,6 +90,19 @@ public partial class Form1 : Form
     {
         base.OnHandleCreated(e);
         TryApplyGlassBackdrop(Handle);
+        var margins = new MARGINS { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
+        DwmExtendFrameIntoClientArea(Handle, ref margins);
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        try
+        {
+            Color tint = ColorTranslator.FromHtml(store.Profile.WindowTintColor);
+            using var brush = new SolidBrush(Color.FromArgb(store.Profile.WindowTintOpacity, tint));
+            e.Graphics.FillRectangle(brush, ClientRectangle);
+        }
+        catch { base.OnPaintBackground(e); }
     }
 
     protected override async void OnLoad(EventArgs e)
@@ -173,8 +186,8 @@ public partial class Form1 : Form
         Text = "Flint";
         KeyPreview = true;
         FormBorderStyle = FormBorderStyle.None;
-        AllowTransparency = true;
-        BackColor = Color.Black;
+        DoubleBuffered = true;
+        BackColor = ColorTranslator.FromHtml(store.Profile.WindowTintColor);
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
         Icon = CreateFlintIcon();
 
@@ -750,6 +763,16 @@ public partial class Form1 : Form
         Navigate(url);
     }
 
+    private void ApplyTint()
+    {
+        try
+        {
+            BackColor = ColorTranslator.FromHtml(store.Profile.WindowTintColor);
+            Invalidate();
+        }
+        catch { }
+    }
+
     private void ToggleFullscreen()
     {
         if (!isFullscreen)
@@ -871,6 +894,28 @@ public partial class Form1 : Form
                     {
                         store.Profile.PegboardGridOpacity = Math.Clamp(op, 0.0, 1.0);
                         store.Save();
+                    }
+                    break;
+                case "openTintPicker":
+                    using (var dlg = new ColorDialog { FullOpen = true })
+                    {
+                        try { dlg.Color = ColorTranslator.FromHtml(store.Profile.WindowTintColor); } catch { }
+                        if (dlg.ShowDialog(this) == DialogResult.OK)
+                        {
+                            store.Profile.WindowTintColor = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
+                            store.Save();
+                            ApplyTint();
+                            ActiveView.CoreWebView2?.PostWebMessageAsString(
+                                $"{{\"type\":\"tintColorChanged\",\"color\":\"{store.Profile.WindowTintColor}\"}}");
+                        }
+                    }
+                    break;
+                case "setTintOpacity":
+                    if (root.TryGetProperty("value", out JsonElement toProp) && toProp.TryGetInt32(out int toVal))
+                    {
+                        store.Profile.WindowTintOpacity = (int)Math.Round(Math.Clamp(toVal, 0, 100) * 2.55);
+                        store.Save();
+                        ApplyTint();
                     }
                     break;
                 case "openFile":
@@ -1536,6 +1581,12 @@ public partial class Form1 : Form
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MARGINS { public int cxLeftWidth, cxRightWidth, cyTopHeight, cyBottomHeight; }
 
     [DllImport("user32.dll")]
     private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);

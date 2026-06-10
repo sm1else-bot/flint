@@ -148,6 +148,8 @@ public sealed class BrowserProfile
     public BrowserSettings Settings { get; set; } = new();
     public bool AdBlockEnabled { get; set; } = true;
     public double PegboardGridOpacity { get; set; } = 0.055;
+    public string WindowTintColor { get; set; } = "#0d0d14";
+    public int WindowTintOpacity { get; set; } = 180;
     public string DownloadFolder { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     public List<HistoryItem> History { get; set; } = [];

@@ -1276,12 +1276,40 @@ public static class ShellPages
                 <span id="grid-opacity-pct" style="font-size:11px;color:rgba(255,255,255,0.35);min-width:32px;text-align:right;">{{Math.Round(profile.PegboardGridOpacity * 100)}}%</span>
               </div>
             </div>
+            <div class="settings-row" style="margin-top:8px;">
+              <div><strong>Window Tint</strong><span>Background tint color and opacity</span></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <button id="tint-swatch" style="width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.22);background:{{Html(profile.WindowTintColor)}};cursor:pointer;flex-shrink:0;padding:0;"></button>
+                <input type="range" id="tint-opacity" min="0" max="100" step="1"
+                  value="{{(int)Math.Round(profile.WindowTintOpacity / 2.55)}}"
+                  style="width:90px;accent-color:rgba(116,247,255,0.8);cursor:pointer;">
+                <span id="tint-opacity-pct" style="font-size:11px;color:rgba(255,255,255,0.35);min-width:32px;text-align:right;">{{(int)Math.Round(profile.WindowTintOpacity / 2.55)}}%</span>
+              </div>
+            </div>
           </section>
           <script>
             document.getElementById('grid-opacity').addEventListener('input', function() {
               const v = parseFloat(this.value);
               document.getElementById('grid-opacity-pct').textContent = Math.round(v * 100) + '%';
               post({ type: 'setPegboardGridOpacity', value: v });
+            });
+            document.getElementById('tint-swatch').addEventListener('click', function(e) {
+              e.stopPropagation();
+              post({ type: 'openTintPicker' });
+            });
+            document.getElementById('tint-opacity').addEventListener('input', function() {
+              const v = parseInt(this.value);
+              document.getElementById('tint-opacity-pct').textContent = v + '%';
+              post({ type: 'setTintOpacity', value: v });
+            });
+            window.chrome?.webview?.addEventListener('message', function(e) {
+              try {
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'tintColorChanged') {
+                  const sw = document.getElementById('tint-swatch');
+                  if (sw) sw.style.background = msg.color;
+                }
+              } catch {}
             });
           </script>
           <section class="tab-panel" id="tab-about">

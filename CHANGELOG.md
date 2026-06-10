@@ -4,6 +4,10 @@
 
 ### Added
 - **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%). Adjusting it live-updates the percentage label and saves to `profile.json`. The home canvas dot grid picks up the stored value on next load. Stored as `PegboardGridOpacity` (double) on `BrowserProfile`.
+- **Window Tint setting** — Settings → Features → "Window Tint": a color swatch (opens native `ColorDialog` on click) and an opacity slider (0–100%). Tint color and opacity stored in `BrowserProfile` (`WindowTintColor` hex string, default `#0d0d14`; `WindowTintOpacity` 0–255, default 180). Changes apply immediately via `ApplyTint()`. Swatch updates live after color pick via WebMessage without reloading the settings page.
+
+### Changed
+- **Window transparency — DWM frame extension** — removed `AllowTransparency = true` / `BackColor = Color.Black` color-key approach. Replaced with `DwmExtendFrameIntoClientArea(-1,-1,-1,-1)` extending the DWM glass frame over the entire client area. `OnPaintBackground` paints the tint color at the configured opacity. Existing `TryApplyGlassBackdrop` (Acrylic blur + backdrop type) kept and complemented by the frame extension. `DoubleBuffered = true` added.
 
 ---
 
