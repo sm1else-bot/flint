@@ -274,9 +274,12 @@ public static class ShellPages
           backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
           box-shadow:0 6px 24px rgba(0,0,0,.5)!important;
         }
-        .photo-img{
+        .photo-inner{
           position:absolute;top:8px;left:8px;right:8px;bottom:30px;
-          object-fit:cover;display:block;border-radius:2px;
+          overflow:hidden;background:rgba(0,0,0,0.3);border-radius:2px;
+        }
+        .photo-img{
+          width:100%;height:100%;object-fit:contain;display:block;
         }
         .photo-cap{
           position:absolute;bottom:0;left:0;right:0;height:30px;
@@ -803,9 +806,12 @@ public static class ShellPages
           el.classList.add('photo-tile');
           const rot = t.content.rotate || 0;
           el.style.transform = 'rotate(' + rot + 'deg)';
+          const inner = document.createElement('div');
+          inner.className = 'photo-inner';
           const img = document.createElement('img');
           img.className = 'photo-img'; img.src = t.content.url; img.draggable = false;
-          el.appendChild(img);
+          inner.appendChild(img);
+          el.appendChild(inner);
           const cap = document.createElement('div');
           cap.className = 'photo-cap'; cap.contentEditable = 'true';
           cap.textContent = t.content.caption || '';

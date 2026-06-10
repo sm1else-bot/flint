@@ -4,6 +4,13 @@
 
 ---
 
+## [0.2.2] — 2026-06-10
+
+### Fixed
+- **Photo tile — aspect ratio** — images of any dimension now maintain their aspect ratio and fit within the tile bounds without stretching or cropping (`object-fit: contain`). An inner container with `overflow: hidden` and a dark letterbox background (`rgba(0,0,0,0.3)`) makes pillarboxing/letterboxing look intentional.
+
+---
+
 ## [0.2.1] — 2026-06-10
 
 ### Added
