@@ -2,14 +2,12 @@
 
 ## [Unreleased]
 
-### Added
-- **Tab context menu** — right-clicking any tab button shows a dark-styled context menu (BackColor `#14141A`, white text, semi-transparent hover) with: New tab, Reload tab, Mute/Unmute tab, Close tab, a separator, Copy address, and Reopen last closed tab. All actions target the right-clicked tab specifically, not the active tab. Mute state is tracked per `TabEntry.IsMuted` and synced to `CoreWebView2.IsMuted`.
-
 ---
 
 ## [0.2.6] — 2026-06-10
 
 ### Added
+- **Tab context menu** — right-clicking any tab button shows a dark-styled context menu (BackColor `#14141A`, white text, semi-transparent hover) with: New tab, Reload tab, Mute/Unmute tab, Close tab, a separator, Copy address, and Reopen last closed tab. All actions target the right-clicked tab specifically, not the active tab. Mute state is tracked per `TabEntry.IsMuted` and synced to `CoreWebView2.IsMuted`.
 - **Reload/Stop toggle** — reload button shows a stop (×) icon while a page is loading; clicking it calls `CoreWebView2.Stop()`. On `NavigationCompleted` it reverts to the refresh icon. `IsLoading` is stored per `TabEntry` so switching tabs reflects the correct button state.
 - **Flint Spark loading animation** — while a page loads, the tab's favicon slot shows an animated rotating cross (two 10px GDI+ lines, white at 160 opacity) cycling through 6 frames at 60ms via a per-tab `WinForms.Timer`. Animation stops and is replaced by the real favicon on `NavigationCompleted`.
 - **Favicon fetching** — after `NavigationCompleted`, fetches `https://www.google.com/s2/favicons?domain={host}&sz=16` via `HttpClient`, scales to 16×16, and caches by hostname in `_faviconCache`. Applied to the correct tab regardless of which tab is active. Internal `flint://` pages get the Flint app icon scaled to 16×16. Tab title buttons updated to `ImageBeforeText` layout.
