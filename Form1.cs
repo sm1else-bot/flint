@@ -20,11 +20,15 @@ public partial class Form1 : Form
     private readonly GlassButton bookmarkButton;
     private readonly ToolTip toolTip = new();
     private readonly List<TabEntry> tabs = new();
+    private readonly Stack<string> closedTabUrls = new();
     private int activeTabIndex = -1;
     private CoreWebView2Environment? sharedEnvironment;
     private FlowLayoutPanel tabStrip = null!;
     private GlassButton newTabBtn = null!;
+    private int contentTop;
     private bool browserReady;
+    private bool isFullscreen;
+    private Rectangle preFullscreenBounds;
 
     private TabEntry ActiveTab => tabs[activeTabIndex];
     private WebView2 ActiveView => ActiveTab.View;
@@ -88,6 +92,7 @@ public partial class Form1 : Form
         SuspendLayout();
 
         Text = "Flint";
+        KeyPreview = true;
         FormBorderStyle = FormBorderStyle.None;
         AllowTransparency = true;
         BackColor = Color.Black;
@@ -252,8 +257,22 @@ public partial class Form1 : Form
         Controls.Add(tabBar);
         tabBar.BringToFront();
 
+        contentTop = 58 + 36; // chromeBar + tabBar
+
         ResumeLayout(false);
         UpdateNavButtons();
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        foreach (var tab in tabs)
+            PositionView(tab.View);
+    }
+
+    private void PositionView(WebView2 view)
+    {
+        view.SetBounds(0, contentTop, ClientSize.Width, Math.Max(0, ClientSize.Height - contentTop));
     }
 
     private async Task InitializeBrowserAsync()
@@ -282,8 +301,8 @@ public partial class Form1 : Form
     private async Task OpenNewTab()
     {
         var tab = new TabEntry();
-        tab.View.Dock = DockStyle.Fill;
         tab.View.Visible = false;
+        PositionView(tab.View);
 
         Controls.Add(tab.View);
         tab.View.SendToBack();
@@ -297,6 +316,7 @@ public partial class Form1 : Form
         s.AreDefaultScriptDialogsEnabled = true;
         s.AreDefaultContextMenusEnabled = true;
         s.IsStatusBarEnabled = false;
+        s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Flint/1.0";
 
         tab.View.CoreWebView2.WebMessageReceived += WebMessageReceived;
         tab.View.CoreWebView2.NewWindowRequested += (_, args) =>
@@ -331,6 +351,8 @@ public partial class Form1 : Form
                 store.AddHistory(url, tab.View.CoreWebView2.DocumentTitle);
             if (tab == ActiveTab)
             {
+                if (!ActiveTab.ShowingInternal)
+                    addressBox.Text = url;
                 UpdateTitle();
                 UpdateNavButtons();
                 UpdateBookmarkButton();
@@ -363,6 +385,12 @@ public partial class Form1 : Form
     {
         if (index < 0 || index >= tabs.Count) return;
         var tab = tabs[index];
+
+        if (!tab.ShowingInternal)
+        {
+            string url = tab.View.Source?.AbsoluteUri ?? "";
+            if (BrowserStore.IsWebUrl(url)) closedTabUrls.Push(url);
+        }
 
         tabStrip.Controls.Remove(tab.TabPanel);
         tab.TabPanel.Dispose();
@@ -444,6 +472,87 @@ public partial class Form1 : Form
             tabs[i].TitleButton.ForeColor = active
                 ? Color.White
                 : Color.FromArgb(102, 255, 255, 255);
+        }
+    }
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.Control | Keys.T:
+                _ = OpenNewTab();
+                return true;
+            case Keys.Control | Keys.W:
+                if (activeTabIndex >= 0) CloseTab(activeTabIndex);
+                return true;
+            case Keys.Control | Keys.Tab:
+                if (tabs.Count > 1) SwitchToTab((activeTabIndex + 1) % tabs.Count);
+                return true;
+            case Keys.Control | Keys.Shift | Keys.Tab:
+                if (tabs.Count > 1) SwitchToTab((activeTabIndex - 1 + tabs.Count) % tabs.Count);
+                return true;
+            case Keys.Control | Keys.L:
+                addressBox.Focus();
+                addressBox.SelectAll();
+                return true;
+            case Keys.Control | Keys.R:
+            case Keys.F5:
+                ReloadCurrent();
+                return true;
+            case Keys.Control | Keys.Shift | Keys.T:
+                _ = ReopenClosedTab();
+                return true;
+            case Keys.Alt | Keys.Left:
+                if (activeTabIndex >= 0 && ActiveView.CanGoBack) ActiveView.GoBack();
+                return true;
+            case Keys.Alt | Keys.Right:
+                if (activeTabIndex >= 0 && ActiveView.CanGoForward) ActiveView.GoForward();
+                return true;
+            case Keys.Escape:
+                if (activeTabIndex >= 0 && !ActiveTab.ShowingInternal)
+                    ActiveView.CoreWebView2?.Stop();
+                return base.ProcessCmdKey(ref msg, keyData);
+            case Keys.F11:
+                ToggleFullscreen();
+                return true;
+            case Keys.Control | Keys.D1: if (tabs.Count >= 1) SwitchToTab(0); return true;
+            case Keys.Control | Keys.D2: if (tabs.Count >= 2) SwitchToTab(1); return true;
+            case Keys.Control | Keys.D3: if (tabs.Count >= 3) SwitchToTab(2); return true;
+            case Keys.Control | Keys.D4: if (tabs.Count >= 4) SwitchToTab(3); return true;
+            case Keys.Control | Keys.D5: if (tabs.Count >= 5) SwitchToTab(4); return true;
+            case Keys.Control | Keys.D6: if (tabs.Count >= 6) SwitchToTab(5); return true;
+            case Keys.Control | Keys.D7: if (tabs.Count >= 7) SwitchToTab(6); return true;
+            case Keys.Control | Keys.D8: if (tabs.Count >= 8) SwitchToTab(7); return true;
+            case Keys.Control | Keys.D9: if (tabs.Count >= 1) SwitchToTab(tabs.Count - 1); return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    private async Task ReopenClosedTab()
+    {
+        if (closedTabUrls.Count == 0) return;
+        string url = closedTabUrls.Pop();
+        await OpenNewTab();
+        Navigate(url);
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (!isFullscreen)
+        {
+            preFullscreenBounds = Bounds;
+            isFullscreen = true;
+            foreach (Control c in Controls.OfType<GlassChrome>())
+                c.Visible = false;
+            WindowState = FormWindowState.Maximized;
+        }
+        else
+        {
+            isFullscreen = false;
+            WindowState = FormWindowState.Normal;
+            foreach (Control c in Controls.OfType<GlassChrome>())
+                c.Visible = true;
+            Bounds = preFullscreenBounds;
         }
     }
 
