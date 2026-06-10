@@ -4,6 +4,13 @@
 
 ---
 
+## [0.1.7] — 2026-06-09
+
+### Fixed
+- **Removed publish trimming** — `PublishTrimmed`, `TrimMode`, and `_SuppressWinFormsTrimError` removed from `Flint.csproj`; trimmed build threw `TypeLoadException` at launch due to WinForms incompatibility with IL trimming; accepting 148 MB untrimmed size
+
+---
+
 ## [0.1.6] — 2026-06-09
 
 ### Fixed
