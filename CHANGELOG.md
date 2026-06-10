@@ -3,7 +3,6 @@
 ## [Unreleased]
 
 ### Fixed
-- **Tab favicon alignment** — replaced WinForms Button image+text layout (broken with `AutoEllipsis`) with a custom `TabTitleButton` that uses `OnPaint` to draw the 16×16 favicon exactly vertically centered and the title with proper end-ellipsis, eliminating the icon-sinking-to-bottom bug.
 - **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic`, ensuring consistent size regardless of what the server returns.
 
 ### Changed

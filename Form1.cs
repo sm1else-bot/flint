@@ -585,12 +585,24 @@ public partial class Form1 : Form
         closeBtn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 255, 255, 255);
         closeBtn.Click += (_, _) => CloseTab(tabs.IndexOf(tab));
 
-        var titleBtn = new TabTitleButton
+        var titleBtn = new Button
         {
             Dock = DockStyle.Fill,
             Text = tab.Title,
+            FlatStyle = FlatStyle.Flat,
+            ForeColor = Color.FromArgb(102, 255, 255, 255),
+            BackColor = Color.Transparent,
+            TextAlign = ContentAlignment.MiddleLeft,
+            ImageAlign = ContentAlignment.MiddleLeft,
+            TextImageRelation = TextImageRelation.ImageBeforeText,
+            Padding = new Padding(4, 0, 0, 0),
             Font = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Point),
+            AutoEllipsis = true,
+            Cursor = Cursors.Hand,
+            TabStop = false
         };
+        titleBtn.FlatAppearance.BorderSize = 0;
+        titleBtn.FlatAppearance.MouseOverBackColor = Color.Transparent;
         titleBtn.Click += (_, _) => SwitchToTab(tabs.IndexOf(tab));
 
         void ShowTabMenu(object? sender, MouseEventArgs e)
@@ -2219,56 +2231,6 @@ public partial class Form1 : Form
         public override Color SeparatorLight => Color.Transparent;
         public override Color MenuBorder => Color.FromArgb(50, 255, 255, 255);
         public override Color MenuItemBorder => Color.Transparent;
-    }
-
-    private sealed class TabTitleButton : Button
-    {
-        private const int ImgW = 16;
-        private const int PadL = 6;
-        private const int Gap  = 4;
-
-        public TabTitleButton()
-        {
-            SetStyle(
-                ControlStyles.UserPaint |
-                ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.SupportsTransparentBackColor,
-                true);
-            FlatStyle = FlatStyle.Flat;
-            FlatAppearance.BorderSize = 0;
-            FlatAppearance.MouseOverBackColor = Color.Transparent;
-            FlatAppearance.MouseDownBackColor = Color.Transparent;
-            BackColor = Color.Transparent;
-            ForeColor = Color.FromArgb(102, 255, 255, 255);
-            Cursor = Cursors.Hand;
-            TabStop = false;
-        }
-
-        protected override void OnPaintBackground(PaintEventArgs e)
-        {
-            base.OnPaintBackground(e);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            int x = PadL;
-            int cy = Height / 2;
-
-            if (Image != null)
-            {
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.DrawImage(Image, x, cy - ImgW / 2, ImgW, ImgW);
-                x += ImgW + Gap;
-            }
-
-            if (!string.IsNullOrEmpty(Text))
-            {
-                var rect = new Rectangle(x, 0, Width - x - PadL, Height);
-                TextRenderer.DrawText(e.Graphics, Text, Font, rect, ForeColor,
-                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-            }
-        }
     }
 
     private record SuggestionItem(string Title, string Subtitle, string NavigateUrl, Bitmap? Favicon, bool IsSearch);
