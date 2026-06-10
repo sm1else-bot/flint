@@ -28,6 +28,9 @@ public partial class Form1 : Form
     private GlassButton downloadsButton = null!;
     private DownloadDropdownForm? dropdownForm;
     private readonly Dictionary<string, (Panel FillPanel, Label SizeLabel)> dropdownEntries = new();
+    private AddressPanel addressPanel = null!;
+    private SuggestionsDropdown? _suggestionsDropdown;
+    private bool _suppressSuggestions;
     private int activeTabIndex = -1;
     private CoreWebView2Environment? sharedEnvironment;
     private FlowLayoutPanel tabStrip = null!;
@@ -105,6 +108,7 @@ public partial class Form1 : Form
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         if (_hookHandle != IntPtr.Zero) { UnhookWindowsHookEx(_hookHandle); _hookHandle = IntPtr.Zero; }
+        _suggestionsDropdown?.Dispose();
         base.OnFormClosed(e);
     }
 
@@ -225,7 +229,7 @@ public partial class Form1 : Form
         nav.Controls.Add(reloadButton);
         grid.Controls.Add(nav, 1, 0);
 
-        AddressPanel addressPanel = new()
+        addressPanel = new AddressPanel
         {
             Dock = DockStyle.Fill,
             Margin = new Padding(6, 0, 8, 0),
@@ -237,6 +241,8 @@ public partial class Form1 : Form
         addressBox.ForeColor = Color.White;
         addressBox.Font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Point);
         addressBox.KeyDown += AddressBox_KeyDown;
+        addressBox.TextChanged += AddressBox_TextChanged;
+        addressBox.LostFocus += (_, _) => HideSuggestions();
         addressPanel.Controls.Add(addressBox);
         grid.Controls.Add(addressPanel, 2, 0);
 
@@ -352,6 +358,7 @@ public partial class Form1 : Form
         base.OnResize(e);
         foreach (var tab in tabs)
             PositionView(tab.View);
+        PositionSuggestionsDropdown();
     }
 
     private void PositionView(WebView2 view)
@@ -453,7 +460,11 @@ public partial class Form1 : Form
             {
                 reloadButton.Image = StopIcon();
                 if (BrowserStore.IsWebUrl(e.Uri))
+                {
+                    _suppressSuggestions = true;
                     addressBox.Text = e.Uri;
+                    _suppressSuggestions = false;
+                }
             }
         };
         tab.View.NavigationCompleted += (_, e) =>
@@ -476,7 +487,11 @@ public partial class Form1 : Form
             {
                 reloadButton.Image = RefreshIcon();
                 if (!ActiveTab.ShowingInternal)
+                {
+                    _suppressSuggestions = true;
                     addressBox.Text = url;
+                    _suppressSuggestions = false;
+                }
                 UpdateTitle();
                 UpdateNavButtons();
                 UpdateBookmarkButton();
@@ -488,6 +503,7 @@ public partial class Form1 : Form
         tabStrip.Controls.SetChildIndex(newTabBtn, tabStrip.Controls.Count - 1);
         SwitchToTab(tabs.Count - 1);
         ShowHome();
+        BeginInvoke(() => { addressBox.Focus(); addressBox.SelectAll(); });
     }
 
     private void SwitchToTab(int index)
@@ -501,9 +517,12 @@ public partial class Form1 : Form
         UpdateBookmarkButton();
         UpdateTitle();
         reloadButton.Image = ActiveTab.IsLoading ? StopIcon() : RefreshIcon();
+        HideSuggestions();
+        _suppressSuggestions = true;
         addressBox.Text = ActiveTab.ShowingInternal
             ? ActiveTab.InternalAddress
             : ActiveView.Source?.AbsoluteUri ?? "";
+        _suppressSuggestions = false;
     }
 
     private void CloseTab(int index)
@@ -776,13 +795,131 @@ public partial class Form1 : Form
 
     private void AddressBox_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode != Keys.Enter)
+        switch (e.KeyCode)
         {
-            return;
+            case Keys.Down:
+                if (_suggestionsDropdown?.Visible == true)
+                {
+                    _suggestionsDropdown.MoveSelection(1);
+                    e.Handled = true;
+                }
+                return;
+            case Keys.Up:
+                if (_suggestionsDropdown?.Visible == true)
+                {
+                    _suggestionsDropdown.MoveSelection(-1);
+                    e.Handled = true;
+                }
+                return;
+            case Keys.Escape:
+                HideSuggestions();
+                return;
+            case Keys.Enter:
+                if (_suggestionsDropdown?.Visible == true && _suggestionsDropdown.Selected != null)
+                {
+                    string selectedUrl = _suggestionsDropdown.Selected.NavigateUrl;
+                    HideSuggestions();
+                    e.SuppressKeyPress = true;
+                    NavigateFromAddress(selectedUrl);
+                    return;
+                }
+                e.SuppressKeyPress = true;
+                HideSuggestions();
+                NavigateFromAddress(addressBox.Text);
+                return;
         }
+    }
 
-        e.SuppressKeyPress = true;
-        NavigateFromAddress(addressBox.Text);
+    private void AddressBox_TextChanged(object? sender, EventArgs e)
+    {
+        if (_suppressSuggestions) return;
+        string text = addressBox.Text;
+        if (string.IsNullOrWhiteSpace(text)) { HideSuggestions(); return; }
+        var suggestions = BuildSuggestions(text);
+        if (suggestions.Count == 0) { HideSuggestions(); return; }
+        if (_suggestionsDropdown == null || _suggestionsDropdown.IsDisposed)
+        {
+            _suggestionsDropdown = new SuggestionsDropdown(this);
+            PositionSuggestionsDropdown();
+            _suggestionsDropdown.Show(this);
+        }
+        else
+        {
+            PositionSuggestionsDropdown();
+        }
+        _suggestionsDropdown.Populate(suggestions);
+    }
+
+    private List<SuggestionItem> BuildSuggestions(string text)
+    {
+        var results = store.Profile.History
+            .Where(h => h.Url.Contains(text, StringComparison.OrdinalIgnoreCase)
+                     || h.Title.Contains(text, StringComparison.OrdinalIgnoreCase))
+            .Take(6)
+            .Select(h =>
+            {
+                _faviconCache.TryGetValue(TryGetHost(h.Url), out Bitmap? fav);
+                return new SuggestionItem(
+                    string.IsNullOrWhiteSpace(h.Title) ? h.Url : h.Title,
+                    h.Url,
+                    h.Url,
+                    fav,
+                    false);
+            })
+            .ToList();
+
+        if (!LooksLikeUrl(text))
+        {
+            foreach (var engine in SearchEngine.All)
+                results.Add(new SuggestionItem(
+                    $"Search \"{text}\" with {engine.Name}",
+                    TryGetHost(engine.HomeUrl),
+                    engine.BuildSearchUrl(text),
+                    null,
+                    true));
+        }
+        return results;
+    }
+
+    private void HideSuggestions()
+    {
+        if (_suggestionsDropdown != null && !_suggestionsDropdown.IsDisposed)
+        {
+            _suggestionsDropdown.Hide();
+            _suggestionsDropdown.Dispose();
+            _suggestionsDropdown = null;
+        }
+    }
+
+    private void PositionSuggestionsDropdown()
+    {
+        if (_suggestionsDropdown == null || _suggestionsDropdown.IsDisposed) return;
+        Point pt = addressPanel.PointToScreen(new Point(0, addressPanel.Height));
+        _suggestionsDropdown.Left = pt.X;
+        _suggestionsDropdown.Top = pt.Y;
+        _suggestionsDropdown.Width = addressPanel.Width;
+    }
+
+    private void AcceptSuggestion(string url)
+    {
+        HideSuggestions();
+        NavigateFromAddress(url);
+        addressBox.Focus();
+    }
+
+    private static string TryGetHost(string url)
+    {
+        try { return new Uri(url).Host; }
+        catch { return ""; }
+    }
+
+    private static bool LooksLikeUrl(string text)
+    {
+        if (text.Contains(' ')) return false;
+        if (Uri.TryCreate(text, UriKind.Absolute, out Uri? uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            return true;
+        return LooksLikeHost(text);
     }
 
     private void WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -958,7 +1095,10 @@ public partial class Form1 : Form
             url = "https://" + url.Substring(7);
 
         ActiveTab.ShowingInternal = false;
+        HideSuggestions();
+        _suppressSuggestions = true;
         addressBox.Text = url;
+        _suppressSuggestions = false;
         ActiveView.CoreWebView2.Navigate(url);
     }
 
@@ -1006,7 +1146,9 @@ public partial class Form1 : Form
 
         ActiveTab.ShowingInternal = true;
         ActiveTab.InternalAddress = address;
+        _suppressSuggestions = true;
         addressBox.Text = address;
+        _suppressSuggestions = false;
         ActiveView.NavigateToString(html);
         UpdateTitle();
         UpdateNavButtons();
@@ -2084,5 +2226,168 @@ public partial class Form1 : Form
         public override Color SeparatorLight => Color.Transparent;
         public override Color MenuBorder => Color.FromArgb(50, 255, 255, 255);
         public override Color MenuItemBorder => Color.Transparent;
+    }
+
+    private record SuggestionItem(string Title, string Subtitle, string NavigateUrl, Bitmap? Favicon, bool IsSearch);
+
+    private sealed class SuggestionsDropdown : Form
+    {
+        private readonly Form1 owner;
+        private readonly List<Panel> rowPanels = new();
+        private int _selectedIndex = -1;
+        private IReadOnlyList<SuggestionItem>? _items;
+
+        private const int RowH = 36;
+        private const int FavSize = 16;
+        private const int FavX = 12;
+        private const int TitleX = 36;
+
+        public SuggestionsDropdown(Form1 owner)
+        {
+            this.owner = owner;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            BackColor = Color.FromArgb(20, 20, 24);
+            StartPosition = FormStartPosition.Manual;
+            DoubleBuffered = true;
+        }
+
+        protected override bool ShowWithoutActivation => true;
+
+        public SuggestionItem? Selected =>
+            _selectedIndex >= 0 && _items != null && _selectedIndex < _items.Count
+            ? _items[_selectedIndex]
+            : null;
+
+        public void Populate(IReadOnlyList<SuggestionItem> items)
+        {
+            _items = items;
+            _selectedIndex = -1;
+            Controls.Clear();
+            rowPanels.Clear();
+
+            int w = Width;
+            ClientSize = new Size(w, items.Count * RowH);
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                int rowIndex = i;
+
+                var row = new Panel
+                {
+                    Bounds = new Rectangle(0, i * RowH, w, RowH),
+                    BackColor = Color.Transparent,
+                    Cursor = Cursors.Hand
+                };
+
+                // Separator above all rows except the first
+                if (i > 0)
+                    row.Controls.Add(new Panel
+                    {
+                        Bounds = new Rectangle(TitleX, 0, w - TitleX - 12, 1),
+                        BackColor = Color.FromArgb(20, 255, 255, 255)
+                    });
+
+                // Favicon or search icon
+                if (item.Favicon != null)
+                {
+                    row.Controls.Add(new PictureBox
+                    {
+                        Image = item.Favicon,
+                        Bounds = new Rectangle(FavX, (RowH - FavSize) / 2, FavSize, FavSize),
+                        SizeMode = PictureBoxSizeMode.StretchImage,
+                        BackColor = Color.Transparent
+                    });
+                }
+                else if (item.IsSearch)
+                {
+                    row.Controls.Add(new Label
+                    {
+                        Text = "⌕",
+                        ForeColor = Color.FromArgb(70, 255, 255, 255),
+                        BackColor = Color.Transparent,
+                        Font = new Font("Segoe UI", 11f),
+                        Bounds = new Rectangle(FavX - 1, (RowH - FavSize) / 2 - 2, FavSize + 2, FavSize + 4),
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        AutoSize = false
+                    });
+                }
+
+                int urlW = Math.Min(160, (w - TitleX - 16) / 2);
+                int titleW = w - TitleX - urlW - 16;
+
+                var titleLbl = new Label
+                {
+                    Text = item.Title,
+                    ForeColor = Color.FromArgb(220, 255, 255, 255),
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 9.5f),
+                    AutoSize = false,
+                    Bounds = new Rectangle(TitleX, 0, titleW, RowH),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoEllipsis = true
+                };
+                row.Controls.Add(titleLbl);
+
+                var subtitleLbl = new Label
+                {
+                    Text = item.Subtitle,
+                    ForeColor = Color.FromArgb(75, 255, 255, 255),
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 8.5f),
+                    AutoSize = false,
+                    Bounds = new Rectangle(w - urlW - 8, 0, urlW, RowH),
+                    TextAlign = ContentAlignment.MiddleRight,
+                    AutoEllipsis = true
+                };
+                row.Controls.Add(subtitleLbl);
+
+                // Hover + selection highlight helpers
+                void SetHover(bool on)
+                {
+                    if (_selectedIndex != rowIndex)
+                        row.BackColor = on ? Color.FromArgb(18, 255, 255, 255) : Color.Transparent;
+                }
+                void OnClick(object? s, EventArgs ea) => owner.AcceptSuggestion(item.NavigateUrl);
+                void OnEnter(object? s, EventArgs ea) => SetHover(true);
+                void OnLeave(object? s, EventArgs ea)
+                {
+                    Point pt = row.PointToClient(Cursor.Position);
+                    if (!row.ClientRectangle.Contains(pt)) SetHover(false);
+                }
+
+                row.Click += OnClick;
+                row.MouseEnter += OnEnter;
+                row.MouseLeave += OnLeave;
+                foreach (Control c in row.Controls)
+                {
+                    c.Click += OnClick;
+                    c.MouseEnter += OnEnter;
+                    c.MouseLeave += OnLeave;
+                }
+
+                Controls.Add(row);
+                rowPanels.Add(row);
+            }
+        }
+
+        public void MoveSelection(int delta)
+        {
+            if (_items == null || _items.Count == 0) return;
+            if (_selectedIndex >= 0 && _selectedIndex < rowPanels.Count)
+                rowPanels[_selectedIndex].BackColor = Color.Transparent;
+            int next = Math.Clamp(_selectedIndex + delta, -1, _items.Count - 1);
+            _selectedIndex = next;
+            if (_selectedIndex >= 0 && _selectedIndex < rowPanels.Count)
+                rowPanels[_selectedIndex].BackColor = Color.FromArgb(30, 255, 255, 255);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            using var pen = new Pen(Color.FromArgb(40, 255, 255, 255));
+            e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        }
     }
 }

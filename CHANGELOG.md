@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- **Address bar auto-focus on new tab** — opening a new tab (Ctrl+T, + button, or any other path) immediately focuses the address bar and selects all text so you can start typing right away.
+- **Address bar autocomplete dropdown** — typing in the address bar shows a borderless dark glass dropdown (same style as download dropdown) with up to 6 history matches (URL or title, most recent first) plus one "Search … with [Engine]" row per configured engine when the input doesn't look like a URL. Each history row shows the cached favicon, page title, and dimmed URL. ↓/↑ navigate rows from the keyboard, Enter accepts, Escape closes. Clicking a row navigates immediately. The dropdown hides when the address bar loses focus, when navigation starts, or when the box is cleared.
+
 ### Changed
 - **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
 
