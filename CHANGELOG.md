@@ -2,21 +2,24 @@
 
 ## [Unreleased]
 
-### Fixed
-- **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic`, ensuring consistent size regardless of what the server returns.
-
-### Changed
-- **User agent** — simplified to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flint/1.0 Safari/537.36`, dropping the Chrome version token.
-
 ### Added
 - **Address bar auto-focus on new tab** — opening a new tab (Ctrl+T, + button, or any other path) immediately focuses the address bar and selects all text so you can start typing right away.
 - **Address bar autocomplete dropdown** — typing in the address bar shows a borderless dark glass dropdown (same style as download dropdown) with up to 6 history matches (URL or title, most recent first) plus one "Search … with [Engine]" row per configured engine when the input doesn't look like a URL. Each history row shows the cached favicon, page title, and dimmed URL. ↓/↑ navigate rows from the keyboard, Enter accepts, Escape closes. Clicking a row navigates immediately. The dropdown hides when the address bar loses focus, when navigation starts, or when the box is cleared.
+- **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%). Adjusting it live-updates the percentage label and saves to `profile.json`. The home canvas dot grid picks up the stored value on next load. Stored as `PegboardGridOpacity` (double) on `BrowserProfile`.
 
 ### Changed
+- **User agent** — simplified to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flint/1.0 Safari/537.36`, dropping the Chrome version token.
 - **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
 
-### Added
-- **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%). Adjusting it live-updates the percentage label and saves to `profile.json`. The home canvas dot grid picks up the stored value on next load. Stored as `PegboardGridOpacity` (double) on `BrowserProfile`.
+### Fixed
+- **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic` (see `FetchAndSetFavicon` in `Form1.cs`), ensuring consistent size regardless of what the server returns.
+
+### Known Issue — tab favicon vertical alignment (NOT YET FIXED)
+Tab favicons sink to the bottom of the tab button inconsistently when a page title is present. Root cause: WinForms `Button` with `TextImageRelation = ImageBeforeText` and `AutoEllipsis = true` miscalculates the image position relative to the combined text+image block — when ellipsis truncation distorts the text measurement, the entire block (image included) shifts downward.
+
+**What was tried and reverted (commit 91a3bde):** A `TabTitleButton : Button` subclass with `ControlStyles.UserPaint` was introduced to bypass the layout engine entirely, drawing the favicon at `cy − 8` and the title via `TextRenderer.DrawText` with `EndEllipsis`. This fixed the icon position but introduced a visual regression where two overlapping text layers appeared on each tab — the base `Button` text and the custom-drawn text were both rendering simultaneously. The commit was reverted.
+
+**Guidance for the next fix attempt:** The correct approach is still a custom-painted button, but `base.OnPaint` must NOT be called (it redraws the default text). With `ControlStyles.UserPaint` set, calling `base.OnPaintBackground` is enough to clear the background; `OnPaint` must then draw everything from scratch: background tint for active state, favicon at `(6, cy − 8)`, then `TextRenderer.DrawText` for the title. Do not call `base.OnPaint`. Also verify there is no `Text` property still being rendered by the OS button underneath — with `UserPaint` active this should not happen, but double-check. The `TabEntry.TitleButton` field is typed as `Button`; a `TabTitleButton : Button` subclass works as a drop-in.
 
 ---
 
