@@ -4,7 +4,7 @@
 
 ---
 
-## [0.2.5] — 2026-06-10
+## [0.2.6] — 2026-06-10
 
 ### Fixed
 - **Keyboard shortcuts — low-level hook** — replaced the `IMessageFilter` (`KeyFilter`) approach with a `WH_KEYBOARD_LL` system-wide hook via `SetWindowsHookEx`. The hook intercepts all shortcut keystrokes before they reach Chromium/WebView2, so shortcuts (Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+L, Ctrl+R, F5, Alt+Left/Right, F11, Ctrl+1–9, Ctrl+H/D/B/J, Ctrl+,, Alt+Home, Ctrl+Shift+T/Tab, Escape) now work even after clicking into a web page, filling a form, or completing a captcha. Escape is intercepted to call `Stop()` but not suppressed so it still reaches the page. `ProcessCmdKey` is kept as a fallback. Hook is installed in `OnLoad` and torn down in `OnFormClosed`.
