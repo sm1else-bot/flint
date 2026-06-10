@@ -585,24 +585,10 @@ public partial class Form1 : Form
         closeBtn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 255, 255, 255);
         closeBtn.Click += (_, _) => CloseTab(tabs.IndexOf(tab));
 
-        var titleBtn = new Button
+        var titleBtn = new TabTitleButton
         {
-            Dock = DockStyle.Fill,
-            Text = tab.Title,
-            FlatStyle = FlatStyle.Flat,
-            ForeColor = Color.FromArgb(102, 255, 255, 255),
-            BackColor = Color.Transparent,
-            TextAlign = ContentAlignment.MiddleLeft,
-            ImageAlign = ContentAlignment.MiddleLeft,
-            TextImageRelation = TextImageRelation.ImageBeforeText,
-            Padding = new Padding(4, 0, 0, 0),
-            Font = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Point),
-            AutoEllipsis = true,
-            Cursor = Cursors.Hand,
-            TabStop = false
+            Text = tab.Title
         };
-        titleBtn.FlatAppearance.BorderSize = 0;
-        titleBtn.FlatAppearance.MouseOverBackColor = Color.Transparent;
         titleBtn.Click += (_, _) => SwitchToTab(tabs.IndexOf(tab));
 
         void ShowTabMenu(object? sender, MouseEventArgs e)
@@ -2082,6 +2068,81 @@ public partial class Form1 : Form
         path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
         path.CloseFigure();
         return path;
+    }
+
+    private sealed class TabTitleButton : Button
+    {
+        private bool isHovered;
+
+        public TabTitleButton()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            Dock = DockStyle.Fill;
+            FlatStyle = FlatStyle.Flat;
+            ForeColor = Color.FromArgb(102, 255, 255, 255);
+            BackColor = Color.Transparent;
+            Padding = new Padding(4, 0, 0, 0);
+            Font = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Point);
+            Cursor = Cursors.Hand;
+            TabStop = false;
+
+            FlatAppearance.BorderSize = 0;
+            FlatAppearance.MouseOverBackColor = Color.Transparent;
+            FlatAppearance.MouseDownBackColor = Color.Transparent;
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            isHovered = true;
+            Invalidate();
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            isHovered = false;
+            Invalidate();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaintBackground(e);
+
+            int cy = ClientRectangle.Height;
+            int cx = ClientRectangle.Width;
+
+            // Draw subtle hover background
+            if (isHovered)
+            {
+                using SolidBrush hoverBrush = new(Color.FromArgb(15, 255, 255, 255));
+                e.Graphics.FillRectangle(hoverBrush, ClientRectangle);
+            }
+
+            // Draw favicon
+            int textX = 6;
+            if (Image != null)
+            {
+                int imgY = (cy - 16) / 2;
+                e.Graphics.DrawImage(Image, 6, imgY, 16, 16);
+                textX = 6 + 16 + 6;
+            }
+
+            // Adjust text color for hover if not active
+            Color textColor = ForeColor;
+            if (textColor != Color.White && isHovered)
+            {
+                textColor = Color.FromArgb(180, 255, 255, 255);
+            }
+
+            int textWidth = 146 - textX;
+            if (textWidth > 0)
+            {
+                Rectangle textRect = new Rectangle(textX, 0, textWidth, cy);
+                TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
+                TextRenderer.DrawText(e.Graphics, Text, Font, textRect, textColor, flags);
+            }
+        }
     }
 
     private sealed class TabPanel : Panel
