@@ -866,6 +866,13 @@ public partial class Form1 : Form
                     AdBlocker.Enabled = store.Profile.AdBlockEnabled;
                     store.Save();
                     break;
+                case "setPegboardGridOpacity":
+                    if (root.TryGetProperty("value", out JsonElement opProp) && opProp.TryGetDouble(out double op))
+                    {
+                        store.Profile.PegboardGridOpacity = Math.Clamp(op, 0.0, 1.0);
+                        store.Save();
+                    }
+                    break;
                 case "openFile":
                     string filePath = GetString(root, "path");
                     if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
@@ -978,7 +985,7 @@ public partial class Form1 : Form
     }
 
     private void ShowHome() =>
-        ShowInternalPage(HomeAddress, ShellPages.Home(store.CurrentSearchEngine));
+        ShowInternalPage(HomeAddress, ShellPages.Home(store.CurrentSearchEngine, store.Profile.PegboardGridOpacity));
 
     private void ShowHistory() =>
         ShowInternalPage(HistoryAddress, ShellPages.History(store.Profile.History));

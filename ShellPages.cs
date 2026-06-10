@@ -5,7 +5,7 @@ namespace Flint;
 
 public static class ShellPages
 {
-    public static string Home(SearchEngine searchEngine) => """
+    public static string Home(SearchEngine searchEngine, double gridOpacity = 0.055) => """
     <!doctype html>
     <html lang="en">
     <head>
@@ -19,7 +19,7 @@ public static class ShellPages
         #canvas{
           position:relative;width:100%;height:100%;overflow:auto;
           background-color:transparent;
-          background-image:radial-gradient(circle,rgba(255,255,255,.055) 1px,transparent 1px);
+          background-image:radial-gradient(circle,rgba(255,255,255,__GRID_OPACITY__) 1px,transparent 1px);
           background-size:32px 32px;
         }
         #hint{
@@ -1154,7 +1154,7 @@ public static class ShellPages
       </script>
     </body>
     </html>
-    """;
+    """.Replace("__GRID_OPACITY__", gridOpacity.ToString("F4", CultureInfo.InvariantCulture));
 
     public static string History(IReadOnlyList<HistoryItem> history)
     {
@@ -1267,7 +1267,23 @@ public static class ShellPages
               <div><strong>Ad Blocker</strong><span>Block ads and trackers using a host-based blocklist</span></div>
               <button class="toggle-track{{adBlockClass}}" data-adblock-toggle></button>
             </div>
+            <div class="settings-row" style="margin-top:8px;">
+              <div><strong>Pegboard grid opacity</strong><span>Dot grid visibility on the home canvas</span></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <input type="range" id="grid-opacity" min="0" max="0.30" step="0.005"
+                  value="{{profile.PegboardGridOpacity.ToString("F4", CultureInfo.InvariantCulture)}}"
+                  style="width:100px;accent-color:rgba(116,247,255,0.8);cursor:pointer;">
+                <span id="grid-opacity-pct" style="font-size:11px;color:rgba(255,255,255,0.35);min-width:32px;text-align:right;">{{Math.Round(profile.PegboardGridOpacity * 100)}}%</span>
+              </div>
+            </div>
           </section>
+          <script>
+            document.getElementById('grid-opacity').addEventListener('input', function() {
+              const v = parseFloat(this.value);
+              document.getElementById('grid-opacity-pct').textContent = Math.round(v * 100) + '%';
+              post({ type: 'setPegboardGridOpacity', value: v });
+            });
+          </script>
           <section class="tab-panel" id="tab-about">
             <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:18px;padding:24px 20px;">
               <div>
