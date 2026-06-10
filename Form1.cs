@@ -12,7 +12,7 @@ public partial class Form1 : Form
     private const string HistoryAddress = "flint://history";
     private const string BookmarksAddress = "flint://bookmarks";
     private const string SettingsAddress = "flint://settings";
-    private readonly BrowserStore store = BrowserStore.Load();
+    private readonly BrowserStore store;
     private readonly TextBox addressBox = new();
     private readonly GlassButton backButton;
     private readonly GlassButton forwardButton;
@@ -35,6 +35,10 @@ public partial class Form1 : Form
 
     public Form1()
     {
+        try { store = BrowserStore.Load(); }
+        catch { store = BrowserStore.CreateDefault(); }
+        AdBlocker.Enabled = store.Profile.AdBlockEnabled;
+
         InitializeComponent();
 
         backButton = CreateButton("");
@@ -290,6 +294,7 @@ public partial class Form1 : Form
                 userDataFolder: userDataFolder);
 
             browserReady = true;
+            await AdBlocker.InitializeAsync();
             await OpenNewTab();
         }
         catch (Exception ex)
@@ -300,6 +305,7 @@ public partial class Form1 : Form
 
     private async Task OpenNewTab()
     {
+        if (sharedEnvironment == null) return;
         var tab = new TabEntry();
         tab.View.Visible = false;
         PositionView(tab.View);
@@ -319,9 +325,16 @@ public partial class Form1 : Form
         s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Flint/1.0";
 
         tab.View.CoreWebView2.WebMessageReceived += WebMessageReceived;
-        tab.View.CoreWebView2.NewWindowRequested += (_, args) =>
+        tab.View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+        tab.View.CoreWebView2.WebResourceRequested += (_, e) =>
+        {
+            if (AdBlocker.IsBlocked(e.Request.Uri))
+                e.Response = sharedEnvironment!.CreateWebResourceResponse(null, 200, "OK", "");
+        };
+        tab.View.CoreWebView2.NewWindowRequested += async (_, args) =>
         {
             args.Handled = true;
+            await OpenNewTab();
             Navigate(args.Uri);
         };
         tab.View.CoreWebView2.HistoryChanged += (_, _) =>
@@ -544,6 +557,8 @@ public partial class Form1 : Form
             isFullscreen = true;
             foreach (Control c in Controls.OfType<GlassChrome>())
                 c.Visible = false;
+            contentTop = 0;
+            foreach (var t in tabs) PositionView(t.View);
             WindowState = FormWindowState.Maximized;
         }
         else
@@ -552,6 +567,8 @@ public partial class Form1 : Form
             WindowState = FormWindowState.Normal;
             foreach (Control c in Controls.OfType<GlassChrome>())
                 c.Visible = true;
+            contentTop = 58 + 36;
+            foreach (var t in tabs) PositionView(t.View);
             Bounds = preFullscreenBounds;
         }
     }
@@ -569,6 +586,8 @@ public partial class Form1 : Form
 
     private void WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
+        if (!e.Source.StartsWith("flint://", StringComparison.OrdinalIgnoreCase) &&
+            !e.Source.StartsWith("about:", StringComparison.OrdinalIgnoreCase)) return;
         try
         {
             using JsonDocument document = JsonDocument.Parse(e.TryGetWebMessageAsString());
@@ -605,6 +624,11 @@ public partial class Form1 : Form
                 case "setSearchEngine":
                     store.SetSearchEngine(GetString(root, "engine"));
                     ShowSettings();
+                    break;
+                case "setAdBlock":
+                    store.Profile.AdBlockEnabled = root.TryGetProperty("enabled", out JsonElement enProp) && enProp.GetBoolean();
+                    AdBlocker.Enabled = store.Profile.AdBlockEnabled;
+                    store.Save();
                     break;
             }
         }
@@ -667,6 +691,9 @@ public partial class Form1 : Form
     {
         if (!browserReady || activeTabIndex < 0 || !BrowserStore.IsWebUrl(url))
             return;
+
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            url = "https://" + url.Substring(7);
 
         ActiveTab.ShowingInternal = false;
         addressBox.Text = url;

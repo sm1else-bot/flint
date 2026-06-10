@@ -19,27 +19,33 @@ public sealed class BrowserStore
 
     public static BrowserStore Load()
     {
-        string profileDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Flint");
-        Directory.CreateDirectory(profileDirectory);
-
-        string profilePath = Path.Combine(profileDirectory, "profile.json");
-        if (!File.Exists(profilePath))
-        {
-            return new BrowserStore(profilePath, new BrowserProfile());
-        }
-
         try
         {
+            string profileDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Flint");
+            Directory.CreateDirectory(profileDirectory);
+
+            string profilePath = Path.Combine(profileDirectory, "profile.json");
+            if (!File.Exists(profilePath))
+                return new BrowserStore(profilePath, new BrowserProfile());
+
             string json = File.ReadAllText(profilePath);
             BrowserProfile? profile = JsonSerializer.Deserialize<BrowserProfile>(json);
             return new BrowserStore(profilePath, profile ?? new BrowserProfile());
         }
         catch
         {
-            return new BrowserStore(profilePath, new BrowserProfile());
+            return CreateDefault();
         }
+    }
+
+    public static BrowserStore CreateDefault()
+    {
+        string profilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Flint", "profile.json");
+        return new BrowserStore(profilePath, new BrowserProfile());
     }
 
     public SearchEngine CurrentSearchEngine =>
@@ -140,6 +146,7 @@ public sealed class BrowserStore
 public sealed class BrowserProfile
 {
     public BrowserSettings Settings { get; set; } = new();
+    public bool AdBlockEnabled { get; set; } = true;
     public List<HistoryItem> History { get; set; } = [];
     public List<BookmarkItem> Bookmarks { get; set; } = [];
 }

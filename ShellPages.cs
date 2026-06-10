@@ -285,6 +285,8 @@ public static class ShellPages
               """;
         }));
 
+        string adBlockClass = profile.AdBlockEnabled ? " on" : "";
+
         return Page("Settings", $$"""
         <main class="page-shell">
           <header class="page-header">
@@ -297,6 +299,7 @@ public static class ShellPages
           <nav class="tabs" aria-label="Settings">
             <button class="active" data-tab="search">Search</button>
             <button data-tab="data">Data</button>
+            <button data-tab="features">Features</button>
             <button data-tab="about">About</button>
           </nav>
 
@@ -313,6 +316,16 @@ public static class ShellPages
                 <span>{{profile.History.Count.ToString(CultureInfo.InvariantCulture)}} visits saved</span>
               </div>
               <button class="primary-action" data-action="clearHistory">Clear</button>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-features">
+            <div class="settings-row">
+              <div>
+                <strong>Ad Blocker</strong>
+                <span>Block ads and trackers using a host-based blocklist</span>
+              </div>
+              <button class="toggle-track{{adBlockClass}}" data-adblock-toggle></button>
             </div>
           </section>
 
@@ -591,6 +604,41 @@ public static class ShellPages
           color: rgba(255, 255, 255, 0.38);
           margin-top: 2px;
         }
+
+        .toggle-track {
+          position: relative;
+          width: 44px;
+          height: 24px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.10);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          transition: background 200ms ease, border-color 200ms ease;
+          cursor: pointer;
+          flex-shrink: 0;
+          padding: 0;
+        }
+
+        .toggle-track.on {
+          background: rgba(116, 247, 255, 0.22);
+          border-color: rgba(116, 247, 255, 0.42);
+        }
+
+        .toggle-track::after {
+          content: '';
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.45);
+          transition: transform 200ms ease, background 200ms ease;
+        }
+
+        .toggle-track.on::after {
+          transform: translateX(20px);
+          background: rgba(116, 247, 255, 0.90);
+        }
       </style>
     </head>
     <body>
@@ -604,12 +652,19 @@ public static class ShellPages
         };
 
         document.addEventListener("click", (event) => {
-          const el = event.target.closest("[data-action], [data-url], [data-query], [data-delete-history], [data-delete-bookmark], [data-engine], [data-tab]");
+          const el = event.target.closest("[data-action], [data-url], [data-query], [data-delete-history], [data-delete-bookmark], [data-engine], [data-tab], [data-adblock-toggle]");
           if (!el) return;
 
           if (el.dataset.tab) {
             document.querySelectorAll("[data-tab]").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === el.dataset.tab));
             document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === "tab-" + el.dataset.tab));
+            return;
+          }
+
+          if (el.hasAttribute('data-adblock-toggle')) {
+            const on = !el.classList.contains('on');
+            el.classList.toggle('on', on);
+            post({ type: 'setAdBlock', enabled: on });
             return;
           }
 
