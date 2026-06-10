@@ -56,7 +56,6 @@ public partial class Form1 : Form
         bookmarkButton.Image = BookmarkIcon();
 
         BuildShell();
-        Application.AddMessageFilter(new KeyFilter(this));
     }
 
     protected override CreateParams CreateParams
@@ -95,6 +94,74 @@ public partial class Form1 : Form
     {
         base.OnLoad(e);
         await InitializeBrowserAsync();
+        _hookProc = LowLevelKeyboardHook;
+        using var proc = System.Diagnostics.Process.GetCurrentProcess();
+        using var mod = proc.MainModule!;
+        _hookHandle = SetWindowsHookEx(13, _hookProc, GetModuleHandle(mod.ModuleName), 0);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        if (_hookHandle != IntPtr.Zero) { UnhookWindowsHookEx(_hookHandle); _hookHandle = IntPtr.Zero; }
+        base.OnFormClosed(e);
+    }
+
+    private IntPtr LowLevelKeyboardHook(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        const int WM_KEYDOWN    = 0x0100;
+        const int WM_SYSKEYDOWN = 0x0104;
+        if (nCode >= 0 && ((int)wParam == WM_KEYDOWN || (int)wParam == WM_SYSKEYDOWN)
+            && GetForegroundWindow() == Handle)
+        {
+            var kb  = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+            var key = (Keys)kb.vkCode | Control.ModifierKeys;
+            bool suppress = true;
+            switch (key)
+            {
+                case Keys.Control | Keys.T:
+                    BeginInvoke(() => _ = OpenNewTab()); break;
+                case Keys.Control | Keys.W:
+                    BeginInvoke(() => { if (activeTabIndex >= 0) CloseTab(activeTabIndex); }); break;
+                case Keys.Control | Keys.Tab:
+                    BeginInvoke(() => { if (tabs.Count > 1) SwitchToTab((activeTabIndex + 1) % tabs.Count); }); break;
+                case Keys.Control | Keys.Shift | Keys.Tab:
+                    BeginInvoke(() => { if (tabs.Count > 1) SwitchToTab((activeTabIndex - 1 + tabs.Count) % tabs.Count); }); break;
+                case Keys.Control | Keys.L:
+                    BeginInvoke(() => { addressBox.Focus(); addressBox.SelectAll(); }); break;
+                case Keys.Control | Keys.R:
+                case Keys.F5:
+                    BeginInvoke(ReloadCurrent); break;
+                case Keys.Control | Keys.Shift | Keys.T:
+                    BeginInvoke(() => _ = ReopenClosedTab()); break;
+                case Keys.Alt | Keys.Left:
+                    BeginInvoke(() => { if (activeTabIndex >= 0 && ActiveView.CanGoBack) ActiveView.GoBack(); }); break;
+                case Keys.Alt | Keys.Right:
+                    BeginInvoke(() => { if (activeTabIndex >= 0 && ActiveView.CanGoForward) ActiveView.GoForward(); }); break;
+                case Keys.Escape:
+                    BeginInvoke(() => { if (activeTabIndex >= 0 && !ActiveTab.ShowingInternal) ActiveView.CoreWebView2?.Stop(); });
+                    suppress = false; break;
+                case Keys.F11:
+                    BeginInvoke(ToggleFullscreen); break;
+                case Keys.Control | Keys.D1: BeginInvoke(() => { if (tabs.Count >= 1) SwitchToTab(0); }); break;
+                case Keys.Control | Keys.D2: BeginInvoke(() => { if (tabs.Count >= 2) SwitchToTab(1); }); break;
+                case Keys.Control | Keys.D3: BeginInvoke(() => { if (tabs.Count >= 3) SwitchToTab(2); }); break;
+                case Keys.Control | Keys.D4: BeginInvoke(() => { if (tabs.Count >= 4) SwitchToTab(3); }); break;
+                case Keys.Control | Keys.D5: BeginInvoke(() => { if (tabs.Count >= 5) SwitchToTab(4); }); break;
+                case Keys.Control | Keys.D6: BeginInvoke(() => { if (tabs.Count >= 6) SwitchToTab(5); }); break;
+                case Keys.Control | Keys.D7: BeginInvoke(() => { if (tabs.Count >= 7) SwitchToTab(6); }); break;
+                case Keys.Control | Keys.D8: BeginInvoke(() => { if (tabs.Count >= 8) SwitchToTab(7); }); break;
+                case Keys.Control | Keys.D9: BeginInvoke(() => { if (tabs.Count >= 1) SwitchToTab(tabs.Count - 1); }); break;
+                case Keys.Control | Keys.H:         BeginInvoke(ShowHistory); break;
+                case Keys.Control | Keys.D:         BeginInvoke(ToggleCurrentBookmark); break;
+                case Keys.Control | Keys.B:         BeginInvoke(ShowBookmarks); break;
+                case Keys.Control | Keys.Oemcomma:  BeginInvoke(ShowSettings); break;
+                case Keys.Alt | Keys.Home:          BeginInvoke(ShowHome); break;
+                case Keys.Control | Keys.J:         BeginInvoke(ShowDownloads); break;
+                default: suppress = false; break;
+            }
+            if (suppress) return (IntPtr)1;
+        }
+        return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
     }
 
     private void BuildShell()
@@ -1295,6 +1362,37 @@ public partial class Form1 : Form
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
 
+    // ── Low-level keyboard hook ──────────────────────────────────────
+    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KBDLLHOOKSTRUCT
+    {
+        public uint vkCode;
+        public uint scanCode;
+        public uint flags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    private LowLevelKeyboardProc? _hookProc;
+    private IntPtr _hookHandle = IntPtr.Zero;
+
     private enum WindowCompositionAttribute
     {
         AccentPolicy = 19
@@ -1695,22 +1793,6 @@ public partial class Form1 : Form
         public string InternalAddress { get; set; } = "";
     }
 
-    private sealed class KeyFilter : IMessageFilter
-    {
-        private const int WmKeyDown = 0x0100;
-        private const int WmSysKeyDown = 0x0104;
-        private readonly Form1 owner;
-        public KeyFilter(Form1 owner) => this.owner = owner;
-        public bool PreFilterMessage(ref Message m)
-        {
-            if ((m.Msg == WmKeyDown || m.Msg == WmSysKeyDown) && owner.ContainsFocus)
-            {
-                var key = (Keys)(int)m.WParam | ModifierKeys;
-                return owner.ProcessCmdKey(ref m, key);
-            }
-            return false;
-        }
-    }
 
     private sealed class ToastForm : Form
     {
