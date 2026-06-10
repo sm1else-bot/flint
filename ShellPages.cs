@@ -177,16 +177,12 @@ public static class ShellPages
         .line-tile:hover{border-color:rgba(255,255,255,.07)!important}
         .line-tile .tile-x{opacity:0;transition:opacity 120ms,color 120ms,background 120ms}
         .line-tile:hover .tile-x{opacity:1}
-        .ln{position:absolute;background:rgba(255,255,255,.35);border-radius:1px;
-          cursor:pointer;transition:background 120ms;}
-        .ln:hover{background:rgba(255,255,255,.55)}
-        .ln-rot{
-          position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-          background:rgba(20,20,20,.7);border:1px solid rgba(255,255,255,.15);
-          color:rgba(255,255,255,.6);font-size:11px;width:22px;height:22px;
-          border-radius:4px;cursor:pointer;display:none;align-items:center;
-          justify-content:center;z-index:10;line-height:1;
+        .ln-dot{
+          position:absolute;width:10px;height:10px;border-radius:50%;
+          background:rgba(255,255,255,.7);cursor:ns-resize;display:none;
+          transform:translate(-50%,-50%);z-index:2;
         }
+        .line-tile:hover .ln-dot{display:block}
         .line-tile:hover .ln-rot{display:flex}
         /* Timer */
         .tmr-tile{
@@ -359,15 +355,15 @@ public static class ShellPages
         };
         const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4} };
 
-        let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm, photoZ = 600;
+        let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm, photoZ = 600, linePtA = null;
 
         function claim(t) {
-          if (t.type === 'photo') return;
+          if (t.type === 'photo' || t.type === 'line') return;
           for (let x=t.gridX; x<t.gridX+t.gridW; x++)
             for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.add(K(x,y));
         }
         function release(t) {
-          if (t.type === 'photo') return;
+          if (t.type === 'photo' || t.type === 'line') return;
           for (let x=t.gridX; x<t.gridX+t.gridW; x++)
             for (let y=t.gridY; y<t.gridY+t.gridH; y++) occ.delete(K(x,y));
         }
@@ -382,7 +378,8 @@ public static class ShellPages
           saveTm = setTimeout(() => {
             const out = tiles.filter(t =>
               (t.type !== 'shortcut' || t.content?.url) &&
-              (t.type !== 'photo'    || t.content?.url)
+              (t.type !== 'photo'    || t.content?.url) &&
+              (t.type !== 'line'     || t.content?.x1 != null)
             );
             post({ type:'savePegboard', json: JSON.stringify(out) });
           }, 500);
@@ -615,52 +612,53 @@ public static class ShellPages
         // ── Line ────────────────────────────────────────────────────
         function mkLine(el, t) {
           el.classList.add('line-tile');
-          if (!t.content) t.content = {};
-          t.content.orientation = t.content.orientation || 'h';
-          t.content.thickness   = t.content.thickness   || 1;
+          if (t.content?.x1 == null) return;
+          const { x1, y1, x2, y2 } = t.content;
+          const th = t.content.thickness || 2;
+          const pad = 12;
+          const left   = Math.min(x1,x2) - pad;
+          const top    = Math.min(y1,y2) - pad;
+          const width  = Math.max(Math.abs(x2-x1), 1) + 2*pad;
+          const height = Math.max(Math.abs(y2-y1), 1) + 2*pad;
+          el.style.left   = left   + 'px';
+          el.style.top    = top    + 'px';
+          el.style.width  = width  + 'px';
+          el.style.height = height + 'px';
 
-          const ln = document.createElement('div');
-          ln.className = 'ln';
-          applyLn(ln, t.content.orientation, t.content.thickness);
-          ln.addEventListener('click', e => {
-            e.stopPropagation();
-            t.content.thickness = (t.content.thickness % 3) + 1;
-            applyLn(ln, t.content.orientation, t.content.thickness);
-            sched();
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
+          const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          ln.setAttribute('x1', x1-left); ln.setAttribute('y1', y1-top);
+          ln.setAttribute('x2', x2-left); ln.setAttribute('y2', y2-top);
+          ln.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+          ln.setAttribute('stroke-width', th);
+          ln.setAttribute('stroke-linecap', 'round');
+          svg.appendChild(ln);
+          el.appendChild(svg);
+
+          const dot = document.createElement('div');
+          dot.className = 'ln-dot';
+          dot.style.left = ((x1+x2)/2 - left) + 'px';
+          dot.style.top  = ((y1+y2)/2 - top)  + 'px';
+          dot.addEventListener('mousedown', e => {
+            e.preventDefault(); e.stopPropagation();
+            const sy = e.clientY, st = t.content.thickness || 2;
+            const mm = ev => {
+              const newTh = Math.max(1, Math.min(8, st + Math.round((ev.clientY - sy) / 6)));
+              if (newTh !== t.content.thickness) {
+                t.content.thickness = newTh;
+                ln.setAttribute('stroke-width', newTh);
+              }
+            };
+            const mu = () => {
+              document.removeEventListener('mousemove', mm);
+              document.removeEventListener('mouseup', mu);
+              sched();
+            };
+            document.addEventListener('mousemove', mm);
+            document.addEventListener('mouseup', mu);
           });
-          el.appendChild(ln);
-
-          const rb = document.createElement('button');
-          rb.className = 'ln-rot'; rb.textContent = '\u21f3';
-          rb.title = 'Rotate';
-          rb.addEventListener('click', e => {
-            e.stopPropagation();
-            const newOri = t.content.orientation === 'h' ? 'v' : 'h';
-            release(t);
-            const nw = t.gridH, nh = t.gridW;
-            if (free(t.gridX, t.gridY, nw, nh)) {
-              t.gridW = nw; t.gridH = nh;
-              t.content.orientation = newOri;
-              el.style.width  = g2p(t.gridW) + 'px';
-              el.style.height = g2p(t.gridH) + 'px';
-              applyLn(ln, newOri, t.content.thickness);
-              claim(t); sched();
-            } else {
-              claim(t);
-              el.style.borderColor = 'rgba(255,80,80,.6)';
-              el.style.borderStyle = 'solid';
-              setTimeout(() => { el.style.borderColor = ''; el.style.borderStyle = ''; }, 600);
-            }
-          });
-          el.appendChild(rb);
-        }
-
-        function applyLn(ln, ori, th) {
-          if (ori === 'h') {
-            ln.style.cssText = 'width:100%;height:' + th + 'px;position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.35);border-radius:1px;';
-          } else {
-            ln.style.cssText = 'height:100%;width:' + th + 'px;position:absolute;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.35);border-radius:1px;';
-          }
+          el.appendChild(dot);
         }
 
         // ── Timer / Stopwatch ────────────────────────────────────────
@@ -860,8 +858,7 @@ public static class ShellPages
             if (!url) return;
             if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
             const rotate = parseFloat((Math.random()*6-3).toFixed(2));
-            let caption = '';
-            try { caption = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+            const caption = '';
             const old = canvas.querySelector('[data-id="' + t.id + '"]');
             release(t);
             t.content = { url, caption, rotate };
@@ -883,7 +880,7 @@ public static class ShellPages
         function setupDrag(el, t) {
           let wasDragged = false;
           el.addEventListener('mousedown', e => {
-            if (e.target.closest('.tile-x,.note-body,.rh,.rh-photo,.sc-form,.label-body,.photo-cap,.tmr-mode,.tmr-btns,.tmr-dur,.recent-hdr,.recent-list,.ln,.ln-rot')) return;
+            if (e.target.closest('.tile-x,.note-body,.rh,.rh-photo,.sc-form,.label-body,.photo-cap,.tmr-mode,.tmr-btns,.tmr-dur,.recent-hdr,.recent-list,.ln-dot')) return;
             e.preventDefault();
             if (t.type === 'photo') bringToFront(el, t);
             const sx = e.clientX, sy = e.clientY;
@@ -894,7 +891,7 @@ public static class ShellPages
               if (!moved && Math.hypot(dx,dy) > 5) {
                 moved = true; wasDragged = true;
                 el.classList.add('dragging');
-                if (t.type !== 'photo') release(t);
+                if (t.type !== 'photo' && t.type !== 'line') release(t);
               }
               if (moved) {
                 el.style.left = Math.max(0, sl+dx) + 'px';
@@ -909,6 +906,15 @@ public static class ShellPages
               if (t.type === 'photo') {
                 t.content.px = parseInt(el.style.left)||0;
                 t.content.py = parseInt(el.style.top)||0;
+                sched();
+              } else if (t.type === 'line') {
+                const pad = 12;
+                const oldLeft = Math.min(t.content.x1, t.content.x2) - pad;
+                const oldTop  = Math.min(t.content.y1, t.content.y2) - pad;
+                const ddx = (parseInt(el.style.left)||0) - oldLeft;
+                const ddy = (parseInt(el.style.top)||0)  - oldTop;
+                t.content.x1 += ddx; t.content.y1 += ddy;
+                t.content.x2 += ddx; t.content.y2 += ddy;
                 sched();
               } else {
                 const ngx = p2g(parseInt(el.style.left)||0);
@@ -989,9 +995,14 @@ public static class ShellPages
           const gw = sz.w, gh = sz.h;
           if (type !== 'photo' && !free(gx, gy, gw, gh)) return false;
           const t = { id:uid(), type, gridX:gx, gridY:gy, gridW:gw, gridH:gh, content:{} };
-          if (type === 'line') t.content = { orientation:'h', thickness:1 };
           tiles.push(t); claim(t); mkTile(t); sched(); syncHint();
           return true;
+        }
+
+        function addLineTile(x1, y1, x2, y2) {
+          const t = { id:uid(), type:'line', gridX:0, gridY:0, gridW:1, gridH:1,
+                      content:{ x1, y1, x2, y2, thickness:2 } };
+          tiles.push(t); mkTile(t); sched(); syncHint();
         }
 
         function rmTile(id) {
@@ -1023,6 +1034,27 @@ public static class ShellPages
         // ── Placement mode ───────────────────────────────────────────
         function startPlace(type) {
           hideBox(); placing = type; document.body.classList.add('placing');
+          if (type === 'line') {
+            linePtA = null;
+            ghost = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            ghost.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200;overflow:visible;';
+            ghost._ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            ghost._ln.setAttribute('stroke', 'white');
+            ghost._ln.setAttribute('stroke-opacity', '0.5');
+            ghost._ln.setAttribute('stroke-width', '2');
+            ghost._ln.setAttribute('stroke-linecap', 'round');
+            ghost._ln.setAttribute('x1','0'); ghost._ln.setAttribute('y1','0');
+            ghost._ln.setAttribute('x2','0'); ghost._ln.setAttribute('y2','0');
+            ghost._dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            ghost._dot.setAttribute('r', '5');
+            ghost._dot.setAttribute('fill', 'white');
+            ghost._dot.setAttribute('fill-opacity', '0.5');
+            ghost._dot.setAttribute('cx', '-999'); ghost._dot.setAttribute('cy', '-999');
+            ghost.appendChild(ghost._ln);
+            ghost.appendChild(ghost._dot);
+            canvas.appendChild(ghost);
+            return;
+          }
           const sz = SETUP[type] || DEF[type];
           ghost = document.createElement('div');
           ghost.className = 'ghost';
@@ -1034,6 +1066,21 @@ public static class ShellPages
         canvas.addEventListener('mousemove', e => {
           if (!placing || !ghost) return;
           const r = canvas.getBoundingClientRect();
+          if (placing === 'line') {
+            const px = e.clientX - r.left, py = e.clientY - r.top;
+            if (linePtA === null) {
+              ghost._dot.setAttribute('cx', px); ghost._dot.setAttribute('cy', py);
+            } else {
+              const dx = Math.abs(px - linePtA.x), dy = Math.abs(py - linePtA.y);
+              const x2 = dx >= dy ? px : linePtA.x;
+              const y2 = dx >= dy ? linePtA.y : py;
+              ghost._ln.setAttribute('x1', linePtA.x); ghost._ln.setAttribute('y1', linePtA.y);
+              ghost._ln.setAttribute('x2', x2);        ghost._ln.setAttribute('y2', y2);
+              ghost._dot.setAttribute('cx', (linePtA.x+x2)/2);
+              ghost._dot.setAttribute('cy', (linePtA.y+y2)/2);
+            }
+            return;
+          }
           const gx = p2g(e.clientX - r.left), gy = p2g(e.clientY - r.top);
           const sz = SETUP[placing] || DEF[placing];
           ghost.style.left = g2p(gx) + 'px';
@@ -1045,6 +1092,24 @@ public static class ShellPages
           if (!placing) return;
           if (e.target.closest('.tile')) return;
           const r = canvas.getBoundingClientRect();
+          if (placing === 'line') {
+            const px = e.clientX - r.left, py = e.clientY - r.top;
+            if (linePtA === null) {
+              linePtA = { x: px, y: py };
+              ghost._dot.setAttribute('cx', px); ghost._dot.setAttribute('cy', py);
+              ghost._ln.setAttribute('x1', px); ghost._ln.setAttribute('y1', py);
+              ghost._ln.setAttribute('x2', px); ghost._ln.setAttribute('y2', py);
+            } else {
+              const dx = Math.abs(px - linePtA.x), dy = Math.abs(py - linePtA.y);
+              const x2 = dx >= dy ? px : linePtA.x;
+              const y2 = dx >= dy ? linePtA.y : py;
+              if (ghost) { ghost.remove(); ghost = null; }
+              document.body.classList.remove('placing');
+              addLineTile(linePtA.x, linePtA.y, x2, y2);
+              linePtA = null; placing = null;
+            }
+            return;
+          }
           const gx = p2g(e.clientX - r.left), gy = p2g(e.clientY - r.top);
           if (ghost) { ghost.remove(); ghost = null; }
           document.body.classList.remove('placing');
@@ -1066,7 +1131,7 @@ public static class ShellPages
           if (e.key === 'Escape') {
             hideBox();
             if (placing) {
-              placing = null;
+              placing = null; linePtA = null;
               if (ghost) { ghost.remove(); ghost = null; }
               document.body.classList.remove('placing');
             }

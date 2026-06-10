@@ -4,6 +4,16 @@
 
 ---
 
+## [0.2.4] — 2026-06-10
+
+### Fixed
+- **Photo tile — caption** — caption is now blank by default; the hostname of the image URL is no longer used as the initial caption text.
+
+### Changed
+- **Line tile — complete redesign** — lines are now drawn by clicking two points on the canvas (H or V constrained, with a live preview). The tile is a free-floating SVG rendered at exact pixel coordinates, not a grid-snapped rectangle. A small dot at the midpoint lets you drag to adjust stroke width from 1–8 px. Line color is white at 40% opacity. Old grid-based line tiles are silently dropped on next save.
+
+---
+
 ## [0.2.3] — 2026-06-10
 
 ### Changed
