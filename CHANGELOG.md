@@ -6,6 +6,11 @@
 
 ## [0.2.6] — 2026-06-10
 
+### Added
+- **Reload/Stop toggle** — reload button shows a stop (×) icon while a page is loading; clicking it calls `CoreWebView2.Stop()`. On `NavigationCompleted` it reverts to the refresh icon. `IsLoading` is stored per `TabEntry` so switching tabs reflects the correct button state.
+- **Flint Spark loading animation** — while a page loads, the tab's favicon slot shows an animated rotating cross (two 10px GDI+ lines, white at 160 opacity) cycling through 6 frames at 60ms via a per-tab `WinForms.Timer`. Animation stops and is replaced by the real favicon on `NavigationCompleted`.
+- **Favicon fetching** — after `NavigationCompleted`, fetches `https://www.google.com/s2/favicons?domain={host}&sz=16` via `HttpClient`, scales to 16×16, and caches by hostname in `_faviconCache`. Applied to the correct tab regardless of which tab is active. Internal `flint://` pages get the Flint app icon scaled to 16×16. Tab title buttons updated to `ImageBeforeText` layout.
+
 ### Fixed
 - **Keyboard shortcuts — low-level hook** — replaced the `IMessageFilter` (`KeyFilter`) approach with a `WH_KEYBOARD_LL` system-wide hook via `SetWindowsHookEx`. The hook intercepts all shortcut keystrokes before they reach Chromium/WebView2, so shortcuts (Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+L, Ctrl+R, F5, Alt+Left/Right, F11, Ctrl+1–9, Ctrl+H/D/B/J, Ctrl+,, Alt+Home, Ctrl+Shift+T/Tab, Escape) now work even after clicking into a web page, filling a form, or completing a captcha. Escape is intercepted to call `Stop()` but not suppressed so it still reaches the page. `ProcessCmdKey` is kept as a fallback. Hook is installed in `OnLoad` and torn down in `OnFormClosed`.
 

@@ -14,6 +14,8 @@ public partial class Form1 : Form
     private const string SettingsAddress = "flint://settings";
     private const string DownloadsAddress = "flint://downloads";
     private readonly BrowserStore store;
+    private readonly HttpClient _httpClient = new();
+    private readonly Dictionary<string, Bitmap> _faviconCache = new();
     private readonly TextBox addressBox = new();
     private readonly GlassButton backButton;
     private readonly GlassButton forwardButton;
@@ -429,20 +431,50 @@ public partial class Form1 : Form
         };
         tab.View.NavigationStarting += (_, e) =>
         {
-            if (tab != ActiveTab) return;
-            if (BrowserStore.IsWebUrl(e.Uri))
+            tab.IsLoading = true;
+            tab.SparkTimer?.Stop();
+            tab.SparkTimer?.Dispose();
+            tab.SparkFrame = 0;
+            var sparkTimer = new System.Windows.Forms.Timer { Interval = 60 };
+            tab.SparkTimer = sparkTimer;
+            sparkTimer.Tick += (_, _) =>
             {
-                ActiveTab.ShowingInternal = false;
-                addressBox.Text = e.Uri;
+                if (tab.TitleButton.IsDisposed) { sparkTimer.Stop(); return; }
+                tab.SparkFrame = (tab.SparkFrame + 1) % 6;
+                tab.TitleButton.Image = MakeSparkFrame(tab.SparkFrame);
+            };
+            tab.TitleButton.Image = MakeSparkFrame(0);
+            sparkTimer.Start();
+
+            if (BrowserStore.IsWebUrl(e.Uri))
+                tab.ShowingInternal = false;
+
+            if (tab == ActiveTab)
+            {
+                reloadButton.Image = StopIcon();
+                if (BrowserStore.IsWebUrl(e.Uri))
+                    addressBox.Text = e.Uri;
             }
         };
         tab.View.NavigationCompleted += (_, e) =>
         {
+            tab.IsLoading = false;
+            tab.SparkTimer?.Stop();
+            tab.SparkTimer?.Dispose();
+            tab.SparkTimer = null;
+
             string url = tab.View.Source?.AbsoluteUri ?? "";
             if (e.IsSuccess && BrowserStore.IsWebUrl(url))
                 store.AddHistory(url, tab.View.CoreWebView2.DocumentTitle);
+
+            if (tab.ShowingInternal)
+                tab.TitleButton.Image = FlintFavicon();
+            else
+                _ = FetchAndSetFavicon(tab, url);
+
             if (tab == ActiveTab)
             {
+                reloadButton.Image = RefreshIcon();
                 if (!ActiveTab.ShowingInternal)
                     addressBox.Text = url;
                 UpdateTitle();
@@ -468,6 +500,7 @@ public partial class Form1 : Form
         UpdateNavButtons();
         UpdateBookmarkButton();
         UpdateTitle();
+        reloadButton.Image = ActiveTab.IsLoading ? StopIcon() : RefreshIcon();
         addressBox.Text = ActiveTab.ShowingInternal
             ? ActiveTab.InternalAddress
             : ActiveView.Source?.AbsoluteUri ?? "";
@@ -477,6 +510,10 @@ public partial class Form1 : Form
     {
         if (index < 0 || index >= tabs.Count) return;
         var tab = tabs[index];
+
+        tab.SparkTimer?.Stop();
+        tab.SparkTimer?.Dispose();
+        tab.SparkTimer = null;
 
         if (!tab.ShowingInternal)
         {
@@ -537,7 +574,9 @@ public partial class Form1 : Form
             ForeColor = Color.FromArgb(102, 255, 255, 255),
             BackColor = Color.Transparent,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(8, 0, 0, 0),
+            ImageAlign = ContentAlignment.MiddleLeft,
+            TextImageRelation = TextImageRelation.ImageBeforeText,
+            Padding = new Padding(4, 0, 0, 0),
             Font = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Point),
             AutoEllipsis = true,
             Cursor = Cursors.Hand,
@@ -905,6 +944,7 @@ public partial class Form1 : Form
     {
         if (!browserReady || activeTabIndex < 0) return;
         if (ActiveTab.ShowingInternal) RefreshInternalPage();
+        else if (ActiveTab.IsLoading) ActiveView.CoreWebView2?.Stop();
         else ActiveView.Reload();
     }
 
@@ -1206,6 +1246,63 @@ public partial class Form1 : Form
         using SolidBrush b = new(Color.FromArgb(180, 255, 255, 255));
         g.FillPolygon(b, new PointF[] { new(16f, 14f), new(13.5f, 10f), new(18.5f, 10f) });
     });
+
+    private static Bitmap StopIcon() => MakeIcon(g =>
+    {
+        using Pen pen = new(Color.FromArgb(180, 255, 255, 255), 1.5f)
+            { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        g.DrawLine(pen, 5f, 5f, 15f, 15f);
+        g.DrawLine(pen, 15f, 5f, 5f, 15f);
+    });
+
+    private static Bitmap MakeSparkFrame(int frame)
+    {
+        const float cx = 8f, cy = 8f, len = 5f;
+        double a = frame * (Math.PI / 3.0);
+        var bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.Clear(Color.Transparent);
+        using var pen = new Pen(Color.FromArgb(160, 255, 255, 255), 1.5f)
+            { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        float dx1 = (float)(Math.Cos(a) * len), dy1 = (float)(Math.Sin(a) * len);
+        g.DrawLine(pen, cx - dx1, cy - dy1, cx + dx1, cy + dy1);
+        double a2 = a + Math.PI / 2;
+        float dx2 = (float)(Math.Cos(a2) * len), dy2 = (float)(Math.Sin(a2) * len);
+        g.DrawLine(pen, cx - dx2, cy - dy2, cx + dx2, cy + dy2);
+        return bmp;
+    }
+
+    private Bitmap FlintFavicon()
+    {
+        var bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        if (Icon != null) g.DrawIcon(Icon, new Rectangle(0, 0, 16, 16));
+        return bmp;
+    }
+
+    private async Task FetchAndSetFavicon(TabEntry tab, string url)
+    {
+        try
+        {
+            var host = new Uri(url).Host;
+            if (_faviconCache.TryGetValue(host, out var cached))
+            {
+                if (!tab.TitleButton.IsDisposed) tab.TitleButton.Image = cached;
+                return;
+            }
+            var bytes = await _httpClient.GetByteArrayAsync(
+                $"https://www.google.com/s2/favicons?domain={host}&sz=16");
+            using var ms = new MemoryStream(bytes);
+            using var raw = new Bitmap(ms);
+            var bmp = new Bitmap(raw, new Size(16, 16));
+            _faviconCache[host] = bmp;
+            if (tabs.Contains(tab) && !tab.TitleButton.IsDisposed)
+                tab.TitleButton.Image = bmp;
+        }
+        catch { }
+    }
 
     private static Bitmap HomeIcon() => MakeIcon(g =>
     {
@@ -1791,6 +1888,9 @@ public partial class Form1 : Form
         public string Title { get; set; } = "New Tab";
         public bool ShowingInternal { get; set; }
         public string InternalAddress { get; set; } = "";
+        public bool IsLoading { get; set; }
+        public System.Windows.Forms.Timer? SparkTimer { get; set; }
+        public int SparkFrame { get; set; }
     }
 
 
