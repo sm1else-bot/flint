@@ -4,6 +4,41 @@
 
 ---
 
+## [0.2.1] — 2026-06-10
+
+### Added
+- **Note tile — inline checklist syntax** — typing `/c` followed by Space inside a note tile inserts a real `<input type="checkbox">` element at the caret position. The note body was migrated from `<textarea>` to a `contenteditable` div to support inline DOM elements; content is now persisted as `innerHTML` (`content.html`) with a fallback to `content.text` for notes saved before this version. Checkboxes are checked/unchecked natively and trigger an auto-save on change.
+
+- **Label tile** — a purely decorative text header tile with a transparent background and no glass effect. Default size 6×1 grid cells (192×32px). The label text is a `contenteditable` span that edits in-place on click. A 3-dot drag handle on the left edge is the only draggable area (the rest of the tile is the text editor). The tile border is invisible until hovered, giving a clean floating-text appearance on the canvas.
+
+- **Line / Divider tile** — a transparent tile that renders a single straight line across its full span. Default orientation is horizontal (8×1 cells). Behaviour:
+  - **Thickness cycling** — clicking the line itself cycles through 1px → 2px → 3px → 1px, saved in `content.thickness`.
+  - **Rotate** — a rotate button (↕) appears on hover and swaps orientation H↔V, also swapping `gridW`/`gridH`. If the rotated footprint would collide with another tile, the rotation is refused and the tile flashes a red border for 600ms.
+  - Both orientation (`content.orientation`) and thickness persist in `pegboard.json`.
+
+- **Timer / Stopwatch tile** — a 5×4 tile combining two modes in one widget, toggled by a pill button:
+  - **Stopwatch** — displays `MM:SS.cc` (centiseconds), updates every 10ms via `setInterval`. Start/Pause/Reset buttons.
+  - **Timer** — two editable `MM`/`SS` input fields set the countdown duration. Countdown displays `MM:SS`, flashes red three times when it reaches zero then stops automatically.
+  - Timer/stopwatch state intentionally resets on page reload. The `setInterval` handle is stored on the element and cleared via `el._cleanup()` when the tile is removed, preventing leaks.
+
+- **Recent tile** — a 6×6 scrollable list of the 15 most recently visited URLs, pulled live from Flint's history store. Each row shows the page title and hostname with a click-to-navigate action. A refresh button (↻) in the header re-requests the list. Implementation uses a scoped `tileId` round-trip so multiple Recent tiles can coexist without cross-contamination:
+  - JS fires `loadRecent` with `{ tileId }`.
+  - New C# `WebMessageReceived` case `loadRecent` reads `store.Profile.History.Take(15)`, serialises to JSON, and replies with `{ type: "recentData", tileId, items }`.
+  - Each tile's message listener filters by `tileId` and removes itself via `el._cleanup()` on tile removal.
+
+- **Photo Frame tile (Polaroid)** — a 5×6 tile that displays any direct image URL in a polaroid-style frame:
+  - White background (`#fff`), 8px white padding on left/right/top, 30px caption strip at the bottom.
+  - The image fills the inner area with `object-fit: cover`.
+  - A random rotation between −3° and +3° is applied once at creation time and saved in `content.rotate`, so the polaroid feels hand-placed.
+  - The caption strip is a `contenteditable` span (defaults to the image's hostname); changes auto-save.
+  - Setup form (URL input + confirm button) shown when no URL is set; collapses to the polaroid display on confirm.
+  - The `×` close button uses dark ink (`rgba(0,0,0,0.35)`) instead of the usual white since the tile background is white.
+
+### Changed
+- **Toolbox** — expanded from 3 buttons to 8 (Note, Shortcut, Clock, Label, Line, Timer, Recent, Photo). Button size reduced from 52×52px to 46×46px to keep the pill width reasonable (~410px). Icons for the five new tools are inline Feather-style SVGs consistent with the existing set.
+
+---
+
 ## [0.2.0] — 2026-06-10
 
 ### Added

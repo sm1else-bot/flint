@@ -651,6 +651,16 @@ public partial class Form1 : Form
                     }
                     break;
                 }
+                case "loadRecent":
+                {
+                    string tileId = GetString(root, "tileId");
+                    var items = store.Profile.History.Take(15)
+                        .Select(h => $"{{\"title\":{System.Text.Json.JsonSerializer.Serialize(h.Title)},\"url\":{System.Text.Json.JsonSerializer.Serialize(h.Url)}}}");
+                    string itemsJson = "[" + string.Join(",", items) + "]";
+                    (sender as CoreWebView2)?.PostWebMessageAsString(
+                        "{\"type\":\"recentData\",\"tileId\":" + System.Text.Json.JsonSerializer.Serialize(tileId) + ",\"items\":" + itemsJson + "}");
+                    break;
+                }
                 case "clearHistory":
                     store.ClearHistory();
                     RefreshInternalPage();
