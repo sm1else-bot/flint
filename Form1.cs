@@ -1569,9 +1569,13 @@ public partial class Form1 : Form
         var popup = new ExtensionPopupForm(sharedEnvironment, url, extensionName ?? "Extension");
         _extensionPopup = popup;
 
-        Point anchor = PointToScreen(new Point(Width - popup.Width - 12, contentTop + 4));
-        popup.Left = anchor.X;
-        popup.Top = anchor.Y;
+        var cursor = Cursor.Position;
+        int x = cursor.X - popup.Width / 2;
+        int y = cursor.Y - popup.Height / 2;
+        var workArea = Screen.FromPoint(cursor).WorkingArea;
+        x = Math.Max(workArea.Left, Math.Min(x, workArea.Right - popup.Width));
+        y = Math.Max(workArea.Top, Math.Min(y, workArea.Bottom - popup.Height));
+        popup.Location = new Point(x, y);
         popup.Show(this);
     }
 
