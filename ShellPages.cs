@@ -82,6 +82,40 @@ public static class ShellPages
           margin:0 5px 0 0;vertical-align:middle;cursor:pointer;
           accent-color:rgba(255,255,255,.55);width:13px;height:13px;
         }
+        .note-canvas {
+          position: absolute;
+          top: 26px; left: 0;
+          z-index: 15;
+          pointer-events: none;
+        }
+        .note-tile.drawing-mode .note-canvas {
+          pointer-events: auto;
+          cursor: crosshair;
+        }
+        .note-draw-btn, .note-clear-btn {
+          position: absolute;
+          top: 5px; width: 18px; height: 18px;
+          background: transparent; border: none;
+          color: rgba(255, 255, 255, 0.28);
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          border-radius: 4px; z-index: 20; padding: 0;
+          transition: color 120ms, background 120ms;
+        }
+        .note-draw-btn { right: 28px; }
+        .note-clear-btn { right: 49px; display: none; }
+        .note-tile.drawing-mode .note-clear-btn { display: flex; }
+        .note-draw-btn:hover, .note-clear-btn:hover {
+          color: rgba(255, 255, 255, 0.8);
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .note-draw-btn.active {
+          color: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.15);
+        }
+        .note-draw-btn svg, .note-clear-btn svg {
+          width: 12px; height: 12px; stroke: currentColor; fill: none;
+          stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+        }
         .rh{
           position:absolute;bottom:3px;right:3px;width:14px;height:14px;
           cursor:se-resize;opacity:.22;z-index:10;
@@ -540,6 +574,7 @@ public static class ShellPages
         // ── Note ────────────────────────────────────────────────────
         function mkNote(el, t) {
           el.classList.add('note-tile');
+          
           const body = document.createElement('div');
           body.className = 'note-body';
           body.contentEditable = 'true';
@@ -548,10 +583,14 @@ public static class ShellPages
           if (t.content?.html) body.innerHTML = t.content.html;
           else if (t.content?.text) body.textContent = t.content.text;
 
-          body.addEventListener('input', () => { t.content = { html: body.innerHTML }; sched(); });
+          function saveText() {
+            t.content = t.content || {};
+            t.content.html = body.innerHTML;
+            sched();
+          }
+          body.addEventListener('input', saveText);
           body.addEventListener('mousedown', e => e.stopPropagation());
 
-          // /c + space → insert checkbox
           body.addEventListener('keydown', e => {
             if (e.key !== ' ') return;
             const sel = window.getSelection();
@@ -562,29 +601,185 @@ public static class ShellPages
             const before = node.textContent.slice(0, range.startOffset);
             if (!before.endsWith('/c')) return;
             e.preventDefault();
-            // delete the /c
             const delRange = document.createRange();
             delRange.setStart(node, range.startOffset - 2);
             delRange.setEnd(node, range.startOffset);
             delRange.deleteContents();
-            // insert checkbox
             const cb = document.createElement('input');
             cb.type = 'checkbox';
-            cb.addEventListener('change', () => { t.content = { html: body.innerHTML }; sched(); });
+            cb.addEventListener('change', saveText);
             cb.addEventListener('mousedown', e => e.stopPropagation());
             const r2 = document.createRange();
             r2.setStart(node, range.startOffset - 2);
             r2.collapse(true);
             r2.insertNode(cb);
-            // move caret after checkbox
             const r3 = document.createRange();
             r3.setStartAfter(cb);
             r3.collapse(true);
             sel.removeAllRanges();
             sel.addRange(r3);
           });
-
           el.appendChild(body);
+
+          // Canvas layer
+          const cn = document.createElement('canvas');
+          cn.className = 'note-canvas';
+          el.appendChild(cn);
+
+          const ctx = cn.getContext('2d');
+          let isDrawing = false;
+          let strokePoints = [];
+
+          function setupCtx() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+          }
+
+          setTimeout(() => {
+            cn.width = body.clientWidth;
+            cn.height = body.clientHeight;
+            setupCtx();
+            if (t.content?.doodle) {
+              const img = new Image();
+              img.onload = () => ctx.drawImage(img, 0, 0);
+              img.src = t.content.doodle;
+            }
+          }, 0);
+
+          function resizeCanvas() {
+            if (cn.width === body.clientWidth && cn.height === body.clientHeight) return;
+            const temp = document.createElement('canvas');
+            temp.width = cn.width; temp.height = cn.height;
+            temp.getContext('2d').drawImage(cn, 0, 0);
+
+            cn.width = body.clientWidth;
+            cn.height = body.clientHeight;
+            setupCtx();
+            ctx.drawImage(temp, 0, 0);
+
+            t.content = t.content || {};
+            t.content.doodle = cn.toDataURL();
+          }
+          el._resizeCanvas = resizeCanvas;
+
+          function getXY(e) {
+            const r = cn.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+          }
+
+          cn.addEventListener('mousedown', e => {
+            e.stopPropagation();
+            isDrawing = true;
+            const pt = getXY(e);
+            const now = performance.now();
+            strokePoints = [{ x: pt.x, y: pt.y, t: now, w: 2.5 }];
+          });
+
+          cn.addEventListener('mousemove', e => {
+            e.stopPropagation();
+            if (!isDrawing) return;
+            const pt = getXY(e);
+            const now = performance.now();
+            if (strokePoints.length === 0) return;
+
+            const lastPt = strokePoints[strokePoints.length - 1];
+            const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
+            if (dist < 0.5) return;
+
+            const dt = Math.max(1, now - lastPt.t);
+            const velocity = dist / dt;
+
+            // Tapered/weighted pen: target width decreases as velocity increases
+            const targetWidth = Math.max(1.0, 3.8 - velocity * 1.2);
+            const alpha = 0.18; // smooth width changes
+            const width = lastPt.w * (1 - alpha) + targetWidth * alpha;
+
+            const newPt = { x: pt.x, y: pt.y, t: now, w: width };
+            strokePoints.push(newPt);
+
+            if (strokePoints.length === 2) {
+              const p0 = strokePoints[0];
+              const p1 = strokePoints[1];
+              ctx.beginPath();
+              ctx.moveTo(p0.x, p0.y);
+              ctx.lineTo((p0.x + p1.x) / 2, (p0.y + p1.y) / 2);
+              ctx.lineWidth = p1.w;
+              ctx.stroke();
+            } else if (strokePoints.length > 2) {
+              const p_prev2 = strokePoints[strokePoints.length - 3];
+              const p_prev = strokePoints[strokePoints.length - 2];
+              const p_new = strokePoints[strokePoints.length - 1];
+              const m1 = { x: (p_prev2.x + p_prev.x) / 2, y: (p_prev2.y + p_prev.y) / 2 };
+              const m2 = { x: (p_prev.x + p_new.x) / 2, y: (p_prev.y + p_new.y) / 2 };
+
+              ctx.beginPath();
+              ctx.moveTo(m1.x, m1.y);
+              ctx.quadraticCurveTo(p_prev.x, p_prev.y, m2.x, m2.y);
+              ctx.lineWidth = p_prev.w;
+              ctx.stroke();
+            }
+          });
+
+          function stopDrawing() {
+            if (!isDrawing) return;
+            if (strokePoints.length > 2) {
+              const p_prev2 = strokePoints[strokePoints.length - 2];
+              const p_prev = strokePoints[strokePoints.length - 1];
+              const m = { x: (p_prev2.x + p_prev.x) / 2, y: (p_prev2.y + p_prev.y) / 2 };
+
+              ctx.beginPath();
+              ctx.moveTo(m.x, m.y);
+              ctx.lineTo(p_prev.x, p_prev.y);
+              ctx.lineWidth = p_prev.w;
+              ctx.stroke();
+            }
+            isDrawing = false;
+            strokePoints = [];
+            t.content = t.content || {};
+            t.content.doodle = cn.toDataURL();
+            sched();
+          }
+          cn.addEventListener('mouseup', stopDrawing);
+          cn.addEventListener('mouseleave', stopDrawing);
+
+          // Draw toggle button (pencil icon)
+          const drawBtn = document.createElement('button');
+          drawBtn.className = 'note-draw-btn';
+          drawBtn.title = 'Toggle sketch mode';
+          drawBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+          
+          let drawMode = false;
+          drawBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            drawMode = !drawMode;
+            drawBtn.classList.toggle('active', drawMode);
+            el.classList.toggle('drawing-mode', drawMode);
+            body.contentEditable = drawMode ? 'false' : 'true';
+            if (drawMode) {
+              resizeCanvas();
+            }
+          });
+          drawBtn.addEventListener('mousedown', e => e.stopPropagation());
+          el.appendChild(drawBtn);
+
+          // Clear button (trash icon)
+          const clearBtn = document.createElement('button');
+          clearBtn.className = 'note-clear-btn';
+          clearBtn.title = 'Clear sketch';
+          clearBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+          
+          clearBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            ctx.clearRect(0, 0, cn.width, cn.height);
+            t.content = t.content || {};
+            delete t.content.doodle;
+            sched();
+          });
+          clearBtn.addEventListener('mousedown', e => e.stopPropagation());
+          el.appendChild(clearBtn);
+
           const rh = document.createElement('div');
           rh.className = 'rh';
           rh.innerHTML = '<svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="10" x2="10" y2="2"/><line x1="6" y1="10" x2="10" y2="6"/></svg>';
@@ -1241,17 +1436,29 @@ public static class ShellPages
             const sw = t.gridW, sh = t.gridH;
             release(t);
             const mm = ev => {
-              el.style.width  = g2p(Math.max(3, sw + Math.round((ev.clientX-sx)/G))) + 'px';
-              el.style.height = g2p(Math.max(2, sh + Math.round((ev.clientY-sy)/G))) + 'px';
+              let nw = Math.max(3, sw + Math.round((ev.clientX-sx)/G));
+              let nh = Math.max(2, sh + Math.round((ev.clientY-sy)/G));
+
+              // Clamp proposed grid units to maximum free space in real-time
+              while (nw > 3 && !free(t.gridX, t.gridY, nw, nh)) nw--;
+              while (nh > 2 && !free(t.gridX, t.gridY, nw, nh)) nh--;
+
+              el.style.width  = g2p(nw) + 'px';
+              el.style.height = g2p(nh) + 'px';
             };
             const mu = () => {
               document.removeEventListener('mousemove', mm);
               document.removeEventListener('mouseup', mu);
-              const nw = Math.max(3, p2g(parseInt(el.style.width)));
-              const nh = Math.max(2, p2g(parseInt(el.style.height)));
-              if (free(t.gridX, t.gridY, nw, nh)) { t.gridW = nw; t.gridH = nh; }
+              let nw = Math.max(3, p2g(parseInt(el.style.width)));
+              let nh = Math.max(2, p2g(parseInt(el.style.height)));
+
+              while (nw > 3 && !free(t.gridX, t.gridY, nw, nh)) nw--;
+              while (nh > 2 && !free(t.gridX, t.gridY, nw, nh)) nh--;
+
+              t.gridW = nw; t.gridH = nh;
               el.style.width  = g2p(t.gridW) + 'px';
               el.style.height = g2p(t.gridH) + 'px';
+              if (el._resizeCanvas) el._resizeCanvas();
               claim(t); sched();
             };
             document.addEventListener('mousemove', mm);
