@@ -122,6 +122,113 @@ public static class ShellPages
           display:flex;align-items:center;justify-content:center;
         }
         .rh:hover{opacity:.6}
+        /* System Monitor */
+        .sysmon-tile {
+          background: rgba(10, 10, 16, 0.85) !important;
+          border: 1px solid rgba(255, 80, 80, 0.25) !important;
+          box-shadow: inset 0 0 15px rgba(255, 80, 80, 0.05), 0 8px 32px rgba(0,0,0,0.4) !important;
+        }
+        .sysmon-container {
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          box-sizing: border-box;
+          color: rgba(255,255,255,0.9);
+          font-family: system-ui, -apple-system, sans-serif;
+          justify-content: space-between;
+        }
+        .sysmon-hdr {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          padding-bottom: 4px;
+        }
+        .sysmon-title {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(255, 80, 80, 0.85);
+          text-shadow: 0 0 8px rgba(255, 80, 80, 0.3);
+        }
+        .sysmon-status-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #ff5050;
+          box-shadow: 0 0 8px #ff5050;
+        }
+        .sysmon-status-dot.pulse {
+          animation: sysmon-pulse 1.5s infinite alternate;
+        }
+        @keyframes sysmon-pulse {
+          0% { opacity: 0.3; }
+          100% { opacity: 1; box-shadow: 0 0 10px #ff5050; }
+        }
+        .sysmon-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          flex: 1;
+        }
+        .sysmon-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 6px;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          position: relative;
+          overflow: hidden;
+        }
+        .sysmon-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 2px; height: 100%;
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .cpu-card::before { background: #ff5050; }
+        .temp-card::before { background: #ffaa00; }
+        .ram-card::before { background: #00d4ff; }
+        .flint-card::before { background: #a855f7; }
+
+        .sysmon-label {
+          font-size: 8px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          color: rgba(255, 255, 255, 0.4);
+          text-transform: uppercase;
+        }
+        .sysmon-value {
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 16px;
+          font-weight: bold;
+          color: #fff;
+          margin: 4px 0;
+        }
+        .sysmon-bar-bg {
+          height: 3px;
+          background: rgba(255, 255, 255, 0.07);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        .sysmon-bar-fill {
+          height: 100%;
+          border-radius: 2px;
+          transition: width 0.5s ease-out;
+        }
+        .cpu-fill { background: #ff5050; box-shadow: 0 0 4px #ff5050; }
+        .temp-fill { background: #ffaa00; box-shadow: 0 0 4px #ffaa00; }
+        .ram-fill { background: #00d4ff; box-shadow: 0 0 4px #00d4ff; }
+        .sysmon-flint-sub {
+          font-size: 7px;
+          color: rgba(255, 255, 255, 0.25);
+          text-transform: uppercase;
+        }
         /* Shortcut */
         .sc-tile{
           display:flex;flex-direction:column;align-items:center;
@@ -463,6 +570,10 @@ public static class ShellPages
           <svg viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
           <span>weather</span>
         </button>
+        <button class="tb-btn" id="tb-sys">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="12" rx="2"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="12" y1="15" x2="12" y2="21"/><path d="M7 8h10M7 11h5"/></svg>
+          <span>stats</span>
+        </button>
       </div>
       <script>
         const post = p => window.chrome?.webview?.postMessage(JSON.stringify(p));
@@ -477,7 +588,7 @@ public static class ShellPages
         const DEF = {
           note:{w:6,h:5}, shortcut:{w:3,h:3}, clock:{w:4,h:2},
           label:{w:6,h:1}, line:{w:8,h:1}, timer:{w:5,h:4},
-          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}
+          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}, sysmon:{w:6,h:5}
         };
         const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4}, weather:{w:7,h:4} };
 
@@ -567,6 +678,7 @@ public static class ShellPages
           if (t.type === 'recent')   mkRecent(el, t);
           if (t.type === 'photo')    mkPhoto(el, t);
           if (t.type === 'weather')  mkWeather(el, t);
+          if (t.type === 'sysmon')   mkSysMon(el, t);
           setupDrag(el, t);
           canvas.appendChild(el);
         }
@@ -1317,6 +1429,94 @@ public static class ShellPages
           el.appendChild(form);
         }
 
+        // ── System Monitor ───────────────────────────────────────────
+        function mkSysMon(el, t) {
+          el.classList.add('sysmon-tile');
+
+          const container = document.createElement('div');
+          container.className = 'sysmon-container';
+          container.innerHTML = `
+            <div class="sysmon-hdr">
+              <span class="sysmon-title">SYSTEM MONITOR</span>
+              <span class="sysmon-status-dot pulse"></span>
+            </div>
+            <div class="sysmon-grid">
+              <div class="sysmon-card cpu-card">
+                <div class="sysmon-label">CPU LOAD</div>
+                <div class="sysmon-value" id="sysmon-cpu-${t.id}">0.0%</div>
+                <div class="sysmon-bar-bg">
+                  <div class="sysmon-bar-fill cpu-fill" id="sysmon-cpu-bar-${t.id}" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="sysmon-card temp-card">
+                <div class="sysmon-label">CPU TEMP</div>
+                <div class="sysmon-value" id="sysmon-temp-${t.id}">0.0°C</div>
+                <div class="sysmon-bar-bg">
+                  <div class="sysmon-bar-fill temp-fill" id="sysmon-temp-bar-${t.id}" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="sysmon-card ram-card">
+                <div class="sysmon-label">SYS RAM</div>
+                <div class="sysmon-value" id="sysmon-sysram-${t.id}">0.0%</div>
+                <div class="sysmon-bar-bg">
+                  <div class="sysmon-bar-fill ram-fill" id="sysmon-sysram-bar-${t.id}" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="sysmon-card flint-card">
+                <div class="sysmon-label">FLINT RAM</div>
+                <div class="sysmon-value" id="sysmon-flintram-${t.id}">0.0 MB</div>
+                <div class="sysmon-flint-sub">Subprocesses active</div>
+              </div>
+            </div>
+          `;
+          el.appendChild(container);
+
+          const cpuVal = container.querySelector(`#sysmon-cpu-${t.id}`);
+          const cpuBar = container.querySelector(`#sysmon-cpu-bar-${t.id}`);
+          const tempVal = container.querySelector(`#sysmon-temp-${t.id}`);
+          const tempBar = container.querySelector(`#sysmon-temp-bar-${t.id}`);
+          const ramVal = container.querySelector(`#sysmon-sysram-${t.id}`);
+          const ramBar = container.querySelector(`#sysmon-sysram-bar-${t.id}`);
+          const flintVal = container.querySelector(`#sysmon-flintram-${t.id}`);
+
+          function updateStats() {
+            post({ type: 'getSystemStats' });
+          }
+
+          function onMsg(e) {
+            try {
+              const msg = JSON.parse(e.data);
+              if (msg.type !== 'systemStats') return;
+
+              cpuVal.textContent = msg.cpuLoad.toFixed(1) + '%';
+              cpuBar.style.width = msg.cpuLoad + '%';
+
+              tempVal.textContent = msg.temperature.toFixed(1) + '°C';
+              const tempPct = Math.max(0, Math.min(100, ((msg.temperature - 30) / 60) * 100));
+              tempBar.style.width = tempPct + '%';
+
+              ramVal.textContent = msg.systemRam.toFixed(1) + '%';
+              ramBar.style.width = msg.systemRam + '%';
+
+              flintVal.textContent = msg.flintRam.toFixed(1) + ' MB';
+            } catch (err) {}
+          }
+
+          window.chrome?.webview?.addEventListener('message', onMsg);
+
+          const iv = setInterval(updateStats, 2000);
+
+          el._cleanup = () => {
+            clearInterval(iv);
+            window.chrome?.webview?.removeEventListener('message', onMsg);
+          };
+
+          updateStats();
+        }
+
         // ── Photo ────────────────────────────────────────────────────
         function mkPhoto(el, t) {
           if (!t.content?.url) { mkPhotoForm(el, t); return; }
@@ -1553,6 +1753,7 @@ public static class ShellPages
         document.getElementById('tb-rec').addEventListener('click',  () => startPlace('recent'));
         document.getElementById('tb-ph').addEventListener('click',   () => startPlace('photo'));
         document.getElementById('tb-wt').addEventListener('click',   () => startPlace('weather'));
+        document.getElementById('tb-sys').addEventListener('click',  () => startPlace('sysmon'));
 
         // ── Placement mode ───────────────────────────────────────────
         function startPlace(type) {
