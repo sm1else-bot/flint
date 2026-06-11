@@ -389,7 +389,10 @@ public partial class Form1 : Form
                 "--enable-accelerated-2d-canvas " +
                 "--use-angle=d3d11 " +
                 "--disable-renderer-backgrounding " +
-                "--max-tiles-for-interest-area=512");
+                "--max-tiles-for-interest-area=512")
+            {
+                AreBrowserExtensionsEnabled = true
+            };
             sharedEnvironment = await CoreWebView2Environment.CreateAsync(
                 browserExecutableFolder: null,
                 userDataFolder: userDataFolder,
@@ -1480,7 +1483,7 @@ public partial class Form1 : Form
         string folderPath = dlg.SelectedPath;
         if (!File.Exists(Path.Combine(folderPath, "manifest.json")))
         {
-            ShowToast("Invalid extension folder — manifest.json not found");
+            ShowToast("manifest.json not found in selected folder root");
             return;
         }
 
