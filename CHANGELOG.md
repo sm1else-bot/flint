@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Extension popup UI** — each installed extension in Settings → Features → Extensions now has an "Open" button alongside "Remove". Clicking it reads the extension's `manifest.json` to find `action.default_popup` (MV3) or `browser_action.default_popup` (MV2), resolves the extension ID via `CoreWebView2Profile.GetBrowserExtensionsAsync()`, then opens a 380×600px borderless popup form positioned in the top-right of the window. The popup uses the shared WebView2 environment (same profile/extension context) and navigates to `chrome-extension://{id}/{popup}`. Closes on focus loss. If the extension has no popup defined, a toast is shown.
+
 ---
 
 ## [0.2.8] — 2026-06-10

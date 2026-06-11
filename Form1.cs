@@ -29,6 +29,7 @@ public partial class Form1 : Form
     private int _activeDownloadCount;
     private GlassButton downloadsButton = null!;
     private DownloadDropdownForm? dropdownForm;
+    private ExtensionPopupForm? _extensionPopup;
     private readonly Dictionary<string, (Panel FillPanel, Label SizeLabel)> dropdownEntries = new();
     private AddressPanel addressPanel = null!;
     private SuggestionsDropdown? _suggestionsDropdown;
@@ -1067,6 +1068,9 @@ public partial class Form1 : Form
                 case "removeExtension":
                     RemoveExtension(GetString(root, "path"));
                     break;
+                case "openExtension":
+                    _ = OpenExtensionPopupAsync(GetString(root, "path"));
+                    break;
                 case "getSystemStats":
                 {
                     double flintRam = GetFlintMemoryUsage(sender as CoreWebView2);
@@ -1510,6 +1514,65 @@ public partial class Form1 : Form
         store.Save();
         ShowToast("Extension removed — restart Flint to fully unload");
         ShowSettings();
+    }
+
+    private async Task OpenExtensionPopupAsync(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || sharedEnvironment == null || activeTabIndex < 0) return;
+
+        string manifestPath = Path.Combine(path, "manifest.json");
+        if (!File.Exists(manifestPath)) return;
+
+        string? extensionName = null;
+        string? popupPage = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            var root = doc.RootElement;
+            if (root.TryGetProperty("name", out var n)) extensionName = n.GetString();
+            if (root.TryGetProperty("action", out var mv3) &&
+                mv3.TryGetProperty("default_popup", out var p1) && p1.ValueKind == JsonValueKind.String)
+                popupPage = p1.GetString();
+            else if (root.TryGetProperty("browser_action", out var mv2) &&
+                     mv2.TryGetProperty("default_popup", out var p2) && p2.ValueKind == JsonValueKind.String)
+                popupPage = p2.GetString();
+        }
+        catch { return; }
+
+        if (string.IsNullOrWhiteSpace(popupPage))
+        {
+            ShowToast("This extension has no popup UI");
+            return;
+        }
+
+        string? extensionId = null;
+        try
+        {
+            var exts = await ActiveView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+            var match = exts.FirstOrDefault(e =>
+                string.Equals(e.Name, extensionName, StringComparison.OrdinalIgnoreCase));
+            extensionId = match?.Id;
+        }
+        catch { }
+
+        if (string.IsNullOrWhiteSpace(extensionId))
+        {
+            ShowToast("Could not resolve extension ID — try restarting Flint");
+            return;
+        }
+
+        string url = $"chrome-extension://{extensionId}/{popupPage}";
+
+        _extensionPopup?.Close();
+        _extensionPopup = null;
+
+        var popup = new ExtensionPopupForm(sharedEnvironment, url, extensionName ?? "Extension");
+        _extensionPopup = popup;
+
+        Point anchor = PointToScreen(new Point(Width - popup.Width - 12, contentTop + 4));
+        popup.Left = anchor.X;
+        popup.Top = anchor.Y;
+        popup.Show(this);
     }
 
     private void ChangeDownloadFolder()
@@ -2155,6 +2218,47 @@ public partial class Form1 : Form
                     e.Graphics.DrawString(activeCount.ToString(), new Font("Segoe UI", 7f), new SolidBrush(Color.Black), x, y + radius, sf);
                 }
             }
+        }
+    }
+
+    private sealed class ExtensionPopupForm : Form
+    {
+        private readonly WebView2 webView = new();
+        private readonly CoreWebView2Environment environment;
+        private readonly string url;
+
+        public ExtensionPopupForm(CoreWebView2Environment environment, string url, string title)
+        {
+            this.environment = environment;
+            this.url = url;
+            Text = title;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.Manual;
+            ClientSize = new Size(380, 600);
+            BackColor = Color.FromArgb(24, 24, 28);
+
+            webView.Dock = DockStyle.Fill;
+            Controls.Add(webView);
+
+            Deactivate += (_, _) => Close();
+        }
+
+        protected override async void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            try
+            {
+                await webView.EnsureCoreWebView2Async(environment);
+                webView.CoreWebView2.Navigate(url);
+            }
+            catch { Close(); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) webView.Dispose();
+            base.Dispose(disposing);
         }
     }
 

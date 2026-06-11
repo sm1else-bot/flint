@@ -1983,7 +1983,10 @@ public static class ShellPages
                       <strong>{{Html(name)}}</strong>
                       <span style="font-size:11px;word-break:break-all;opacity:0.5;">{{Html(path)}}</span>
                     </div>
-                    <button class="small-action" data-remove-extension="{{Attr(path)}}">Remove</button>
+                    <div style="display:flex;gap:6px;flex-shrink:0;">
+                      <button class="small-action" data-open-extension="{{Attr(path)}}">Open</button>
+                      <button class="small-action" data-remove-extension="{{Attr(path)}}">Remove</button>
+                    </div>
                   </div>
                   """;
             }));
@@ -2182,7 +2185,7 @@ public static class ShellPages
             window.chrome.webview.postMessage(JSON.stringify(payload));
         };
         document.addEventListener("click", (event) => {
-          const el = event.target.closest("[data-action],[data-url],[data-query],[data-delete-history],[data-delete-bookmark],[data-engine],[data-tab],[data-adblock-toggle],[data-open-file],[data-remove-download],[data-remove-extension]");
+          const el = event.target.closest("[data-action],[data-url],[data-query],[data-delete-history],[data-delete-bookmark],[data-engine],[data-tab],[data-adblock-toggle],[data-open-file],[data-remove-download],[data-remove-extension],[data-open-extension]");
           if (!el) return;
           if (el.dataset.tab) {
             document.querySelectorAll("[data-tab]").forEach(t => t.classList.toggle("active", t.dataset.tab === el.dataset.tab));
@@ -2203,6 +2206,7 @@ public static class ShellPages
           if (el.dataset.openFile) post({ type: "openFile", path: el.dataset.openFile });
           if (el.dataset.removeDownload) post({ type: "removeDownload", id: el.dataset.removeDownload });
           if (el.dataset.removeExtension) post({ type: "removeExtension", path: el.dataset.removeExtension });
+          if (el.dataset.openExtension) post({ type: "openExtension", path: el.dataset.openExtension });
         });
       </script>
     </body>
