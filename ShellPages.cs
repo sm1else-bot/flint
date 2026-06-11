@@ -577,7 +577,7 @@ public static class ShellPages
         const DEF = {
           note:{w:6,h:5}, shortcut:{w:3,h:3}, clock:{w:4,h:2},
           label:{w:6,h:1}, line:{w:8,h:1}, timer:{w:5,h:4},
-          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}, sysmon:{w:6,h:5}
+          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}, sysmon:{w:6,h:6}
         };
         const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4}, weather:{w:7,h:4} };
 
@@ -1421,6 +1421,11 @@ public static class ShellPages
         // ── System Monitor ───────────────────────────────────────────
         function mkSysMon(el, t) {
           el.classList.add('sysmon-tile');
+          if (t.gridW !== DEF.sysmon.w || t.gridH !== DEF.sysmon.h) {
+            release(t);
+            t.gridW = DEF.sysmon.w; t.gridH = DEF.sysmon.h;
+            claim(t);
+          }
 
           const container = document.createElement('div');
           container.className = 'sysmon-container';
