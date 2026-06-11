@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- **Zoom controls** — `Ctrl++` / `Ctrl+=` zooms in, `Ctrl+-` zooms out, `Ctrl+0` resets to 100%. Zoom step is 0.1×, clamped between 25% and 500%. Each tab remembers its own zoom level, restored when switching tabs. Both the low-level keyboard hook and `ProcessCmdKey` handle all three shortcuts, including numpad `+`/`-`.
+- **Set as Default Browser** — Settings → Data tab now has a "Default Browser" row with a "Set as Default" button. Clicking it writes `HKCU\Software\Classes\FlintHTML\shell\open\command` and `HKCU\Software\Clients\StartMenuInternet\Flint\shell\open\command`, then opens `ms-settings:defaultapps` so the user can confirm the selection in Windows. Shows a toast: "Opening Windows default app settings..."
+
 ### Performance
 - **Narrow WebResourceRequested filter** — changed ad-blocker filter from `CoreWebView2WebResourceContext.All` to `Script` + `XmlHttpRequest` only. The handler was previously intercepting every resource request (images, fonts, CSS, media) on the UI thread, blocking each one while doing a URI parse and hash lookup. Now only script and XHR requests are inspected, eliminating the cross-process marshal overhead for all other resource types. Primary fix for low Speedometer scores.
 - **Chromium performance flags** — `CoreWebView2EnvironmentOptions` now passes `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-accelerated-2d-canvas`, `--use-angle=d3d11`, `--disable-renderer-backgrounding`, and `--max-tiles-for-interest-area=512` to the Chromium process at startup. GPU rasterization and zero-copy reduce CPU load on the render side, freeing more cycles for V8.

@@ -1985,6 +1985,10 @@ public static class ShellPages
           </section>
           <section class="tab-panel" id="tab-data">
             <div class="settings-row" style="margin-bottom:8px;">
+              <div><strong>Default Browser</strong><span>Register Flint for http/https links</span></div>
+              <button class="primary-action" data-action="setDefaultBrowser">Set as Default</button>
+            </div>
+            <div class="settings-row" style="margin-bottom:8px;">
               <div><strong>Download Folder</strong><span>{{Html(profile.DownloadFolder)}}</span></div>
               <button class="primary-action" data-action="changeDownloadFolder">Change</button>
             </div>

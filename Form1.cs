@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using Microsoft.Win32;
 
 namespace Flint;
 
@@ -164,6 +165,11 @@ public partial class Form1 : Form
                 case Keys.Control | Keys.Oemcomma:  BeginInvoke(ShowSettings); break;
                 case Keys.Alt | Keys.Home:          BeginInvoke(ShowHome); break;
                 case Keys.Control | Keys.J:         BeginInvoke(ShowDownloads); break;
+                case Keys.Control | Keys.Oemplus:
+                case Keys.Control | Keys.Add:       BeginInvoke(ZoomIn); break;
+                case Keys.Control | Keys.OemMinus:
+                case Keys.Control | Keys.Subtract:  BeginInvoke(ZoomOut); break;
+                case Keys.Control | Keys.D0:        BeginInvoke(ZoomReset); break;
                 default: suppress = false; break;
             }
             if (suppress) return (IntPtr)1;
@@ -525,6 +531,7 @@ public partial class Form1 : Form
         activeTabIndex = index;
         foreach (var t in tabs) t.View.Visible = false;
         ActiveTab.View.Visible = true;
+        ActiveView.ZoomFactor = ActiveTab.ZoomFactor;
         UpdateTabColors();
         UpdateNavButtons();
         UpdateBookmarkButton();
@@ -756,6 +763,11 @@ public partial class Form1 : Form
             case Keys.Control | Keys.Oemcomma: ShowSettings(); return true;
             case Keys.Alt | Keys.Home: ShowHome(); return true;
             case Keys.Control | Keys.J: ShowDownloads(); return true;
+            case Keys.Control | Keys.Oemplus:
+            case Keys.Control | Keys.Add:      ZoomIn(); return true;
+            case Keys.Control | Keys.OemMinus:
+            case Keys.Control | Keys.Subtract: ZoomOut(); return true;
+            case Keys.Control | Keys.D0:       ZoomReset(); return true;
         }
         return base.ProcessCmdKey(ref msg, keyData);
     }
@@ -1021,6 +1033,9 @@ public partial class Form1 : Form
                     break;
                 case "changeDownloadFolder":
                     ChangeDownloadFolder();
+                    break;
+                case "setDefaultBrowser":
+                    SetDefaultBrowser();
                     break;
                 case "getSystemStats":
                 {
@@ -1362,6 +1377,27 @@ public partial class Form1 : Form
         else ActiveView.Reload();
     }
 
+    private void ZoomIn()
+    {
+        if (!browserReady || activeTabIndex < 0) return;
+        ActiveTab.ZoomFactor = Math.Clamp(Math.Round(ActiveTab.ZoomFactor + 0.1, 2), 0.25, 5.0);
+        ActiveView.ZoomFactor = ActiveTab.ZoomFactor;
+    }
+
+    private void ZoomOut()
+    {
+        if (!browserReady || activeTabIndex < 0) return;
+        ActiveTab.ZoomFactor = Math.Clamp(Math.Round(ActiveTab.ZoomFactor - 0.1, 2), 0.25, 5.0);
+        ActiveView.ZoomFactor = ActiveTab.ZoomFactor;
+    }
+
+    private void ZoomReset()
+    {
+        if (!browserReady || activeTabIndex < 0) return;
+        ActiveTab.ZoomFactor = 1.0;
+        ActiveView.ZoomFactor = 1.0;
+    }
+
     private void ToggleCurrentBookmark()
     {
         string url = GetCurrentWebUrl();
@@ -1379,6 +1415,30 @@ public partial class Form1 : Form
             Left + (Width - toast.Width) / 2,
             Bottom - toast.Height - 24);
         toast.Show(this);
+    }
+
+    private void SetDefaultBrowser()
+    {
+        try
+        {
+            string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName;
+            string command = $"\"{exePath}\" \"%1\"";
+
+            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\FlintHTML\shell\open\command"))
+                key.SetValue("", command);
+
+            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Clients\StartMenuInternet\Flint\shell\open\command"))
+                key.SetValue("", command);
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "ms-settings:defaultapps",
+                UseShellExecute = true
+            });
+
+            ShowToast("Opening Windows default app settings...");
+        }
+        catch { }
     }
 
     private void ChangeDownloadFolder()
@@ -2388,6 +2448,7 @@ public partial class Form1 : Form
         public string InternalAddress { get; set; } = "";
         public bool IsLoading { get; set; }
         public bool IsMuted { get; set; }
+        public double ZoomFactor { get; set; } = 1.0;
         public System.Windows.Forms.Timer? SparkTimer { get; set; }
         public int SparkFrame { get; set; }
     }
