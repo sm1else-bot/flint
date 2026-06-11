@@ -14,11 +14,13 @@
 ### Changed
 - **User agent** — restored global Chrome compatibility (`Chrome/124.0.0.0 Safari/537.36 Flint/1.0`) to resolve rendering and layout issues on websites like Facebook.
 - **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
+- **Pegboard toolbox layout** — redesigned the right-click toolbox from a single long horizontal pill layout to a balanced 5x2 grid with rounded corners (`border-radius: 14px`), matching the styling of other widgets.
 
 ### Fixed
 - **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic` (see `FetchAndSetFavicon` in `Form1.cs`), ensuring consistent size regardless of what the server returns.
 - **Tab favicon vertical alignment** — Fixed the sinking favicon issue by subclassing `Button` to create `TabTitleButton`. Overrode `OnPaint` without calling `base.OnPaint` to draw the normalized 16x16 favicon and text manually, leaving a margin before the close button to prevent overlapping. Added a modern hover effect (semi-transparent background overlay and brightened text for inactive tabs).
 - **Note tile checklist fix** — Fixed a crash in the checklist feature where typing `/c` followed by Space caused index errors when inserting the checkbox into the DOM. Checkbox checked states are now dynamically updated and persisted in `t.content.html` using event delegation.
+- **Pegboard toolbox viewport clipping** — fixed the right-click toolbox getting cut off at the right and bottom boundaries of the window by dynamically measuring its bounding rect and shifting/flipping it to the left or top of the cursor when it would overflow the viewport.
 
 ---
 

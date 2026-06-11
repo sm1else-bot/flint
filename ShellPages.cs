@@ -31,10 +31,10 @@ public static class ShellPages
         #hint.gone{opacity:0}
         /* Toolbox */
         #toolbox{
-          position:fixed;display:flex;align-items:center;gap:1px;padding:5px;
+          position:fixed;display:grid;grid-template-columns:repeat(5,46px);gap:2px;padding:6px;
           background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
           -webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
-          border-radius:999px;z-index:9999;
+          border-radius:14px;z-index:9999;
         }
         #toolbox.hidden{display:none}
         .tb-btn{
@@ -1734,9 +1734,20 @@ public static class ShellPages
 
         // ── Toolbox ──────────────────────────────────────────────────
         function showBox(x, y) {
-          toolbox.style.left = Math.min(x, innerWidth-420) + 'px';
-          toolbox.style.top  = Math.min(y, innerHeight-80) + 'px';
           toolbox.classList.remove('hidden');
+          const rect = toolbox.getBoundingClientRect();
+          let left = x;
+          if (x + rect.width > window.innerWidth) {
+            left = window.innerWidth - rect.width - 12;
+          }
+          let top = y;
+          if (y + rect.height > window.innerHeight) {
+            top = window.innerHeight - rect.height - 12;
+          }
+          left = Math.max(12, left);
+          top = Math.max(12, top);
+          toolbox.style.left = left + 'px';
+          toolbox.style.top  = top + 'px';
         }
         function hideBox() { toolbox.classList.add('hidden'); }
 
