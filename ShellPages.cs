@@ -633,7 +633,7 @@ public static class ShellPages
           function setupCtx() {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 1.8;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
           }
 
@@ -674,7 +674,7 @@ public static class ShellPages
             isDrawing = true;
             const pt = getXY(e);
             const now = performance.now();
-            strokePoints = [{ x: pt.x, y: pt.y, t: now, w: 2.5 }];
+            strokePoints = [{ x: pt.x, y: pt.y, t: now, w: 1.8 }];
           });
 
           cn.addEventListener('mousemove', e => {
@@ -692,8 +692,8 @@ public static class ShellPages
             const velocity = dist / dt;
 
             // Tapered/weighted pen: target width decreases as velocity increases
-            const targetWidth = Math.max(1.0, 3.8 - velocity * 1.2);
-            const alpha = 0.18; // smooth width changes
+            const targetWidth = Math.max(0.7, 2.4 - velocity * 0.9);
+            const alpha = 0.22; // smooth width changes
             const width = lastPt.w * (1 - alpha) + targetWidth * alpha;
 
             const newPt = { x: pt.x, y: pt.y, t: now, w: width };
