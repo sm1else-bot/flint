@@ -46,7 +46,6 @@ The home page is the Pegboard, a freeform canvas where you place tiles: notes wi
 | `Ctrl+,` | Settings |
 | `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Zoom in / out / reset |
 
-Shortcuts work even when you're focused inside a page, a text field, or a captcha.
 
 ---
 
