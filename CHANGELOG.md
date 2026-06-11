@@ -17,6 +17,7 @@
 ### Fixed
 - **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic` (see `FetchAndSetFavicon` in `Form1.cs`), ensuring consistent size regardless of what the server returns.
 - **Tab favicon vertical alignment** — Fixed the sinking favicon issue by subclassing `Button` to create `TabTitleButton`. Overrode `OnPaint` without calling `base.OnPaint` to draw the normalized 16x16 favicon and text manually, leaving a margin before the close button to prevent overlapping. Added a modern hover effect (semi-transparent background overlay and brightened text for inactive tabs).
+- **Note tile checklist fix** — Fixed a crash in the checklist feature where typing `/c` followed by Space caused index errors when inserting the checkbox into the DOM. Checkbox checked states are now dynamically updated and persisted in `t.content.html` using event delegation.
 
 ---
 

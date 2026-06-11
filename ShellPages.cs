@@ -591,6 +591,19 @@ public static class ShellPages
           body.addEventListener('input', saveText);
           body.addEventListener('mousedown', e => e.stopPropagation());
 
+          // Persist checked states in innerHTML on change
+          body.addEventListener('change', e => {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+              const cb = e.target;
+              if (cb.checked) {
+                cb.setAttribute('checked', 'checked');
+              } else {
+                cb.removeAttribute('checked');
+              }
+              saveText();
+            }
+          });
+
           body.addEventListener('keydown', e => {
             if (e.key !== ' ') return;
             const sel = window.getSelection();
@@ -601,23 +614,28 @@ public static class ShellPages
             const before = node.textContent.slice(0, range.startOffset);
             if (!before.endsWith('/c')) return;
             e.preventDefault();
+
+            // Delete '/c'
             const delRange = document.createRange();
             delRange.setStart(node, range.startOffset - 2);
             delRange.setEnd(node, range.startOffset);
             delRange.deleteContents();
+
+            // Create checkbox
             const cb = document.createElement('input');
             cb.type = 'checkbox';
-            cb.addEventListener('change', saveText);
-            cb.addEventListener('mousedown', e => e.stopPropagation());
-            const r2 = document.createRange();
-            r2.setStart(node, range.startOffset - 2);
-            r2.collapse(true);
-            r2.insertNode(cb);
+
+            // Insert checkbox at deletion spot
+            delRange.insertNode(cb);
+
+            // Move caret to immediately after the checkbox
             const r3 = document.createRange();
             r3.setStartAfter(cb);
             r3.collapse(true);
             sel.removeAllRanges();
             sel.addRange(r3);
+
+            saveText();
           });
           el.appendChild(body);
 
