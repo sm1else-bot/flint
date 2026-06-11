@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Flint is a Windows browser that stays out of your way. No account prompts, no AI sidebar, no update nags. Glass-themed, fast, and private.">
-  <title>Flint - A browser that stays out of your way</title>
+  <meta name="description" content="Flint is a Windows browser that stays out of your way. No account prompts, no AI sidebar, no update nags.">
+  <title>Flint</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* Logo SVG used inline across the page */
-  </style>
 </head>
 <body>
 
@@ -16,25 +13,19 @@
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
-      <svg class="logo-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="lg-nav" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-            <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.7"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 4 L44 24 L24 44 L4 24 Z" fill="rgba(0,212,255,0.08)" stroke="url(#lg-nav)" stroke-width="1.5"/>
-        <path d="M24 4 L44 24 L24 24 Z" fill="rgba(255,255,255,0.10)"/>
-        <path d="M24 4 L4 24 L24 24 Z" fill="rgba(255,255,255,0.06)"/>
-        <circle cx="24" cy="24" r="2.5" fill="rgba(0,212,255,0.9)"/>
-        <line x1="24" y1="11" x2="24" y2="37" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
-        <line x1="11" y1="24" x2="37" y2="24" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+      <!-- diamond mark: two lines crossing inside a rotated square, pure white strokes -->
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 2 L30 16 L16 30 L2 16 Z" stroke="rgba(255,255,255,0.75)" stroke-width="1.25"/>
+        <path d="M16 2 L30 16 L16 16 Z" fill="rgba(255,255,255,0.09)"/>
+        <line x1="16" y1="7" x2="16" y2="25" stroke="rgba(255,255,255,0.15)" stroke-width="0.75"/>
+        <line x1="7" y1="16" x2="25" y2="16" stroke="rgba(255,255,255,0.15)" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="1.75" fill="rgba(255,255,255,0.8)"/>
       </svg>
       Flint
     </a>
     <div class="nav-links">
       <a href="extensions.html">Extensions</a>
-      <a href="https://github.com/sm1else-bot/flint" target="_blank" rel="noopener" class="nav-github">GitHub</a>
+      <a href="https://github.com/sm1else-bot/flint" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" target="_blank" rel="noopener" class="btn-nav">Download</a>
     </div>
   </div>
@@ -43,91 +34,50 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-grid" aria-hidden="true"></div>
-  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="dot-grid"></div>
 
-  <div class="hero-badge">v0.2.9 now available</div>
-
-  <div class="hero-logo-wrap">
-    <svg class="logo-large" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Flint logo">
-      <defs>
-        <linearGradient id="lg-hero-top" x1="50" y1="5" x2="50" y2="50" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
-        </linearGradient>
-        <linearGradient id="lg-hero-bot" x1="50" y1="95" x2="50" y2="50" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="rgba(0,212,255,0.18)"/>
-          <stop offset="100%" stop-color="rgba(0,212,255,0.04)"/>
-        </linearGradient>
-        <radialGradient id="rg-hero" cx="50%" cy="40%" r="50%">
-          <stop offset="0%" stop-color="rgba(0,212,255,0.18)"/>
-          <stop offset="100%" stop-color="transparent"/>
-        </radialGradient>
-        <filter id="glow-filter">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <!-- Ambient glow -->
-      <ellipse cx="50" cy="46" rx="38" ry="38" fill="url(#rg-hero)"/>
-      <!-- Top facet (lighter) -->
-      <path d="M50 5 L95 50 L50 50 Z" fill="url(#lg-hero-top)"/>
-      <path d="M50 5 L5 50 L50 50 Z" fill="rgba(255,255,255,0.08)"/>
-      <!-- Bottom facet (cyan tint) -->
-      <path d="M50 95 L95 50 L50 50 Z" fill="rgba(0,212,255,0.10)"/>
-      <path d="M50 95 L5 50 L50 50 Z" fill="url(#lg-hero-bot)"/>
-      <!-- Outer stroke -->
-      <path d="M50 5 L95 50 L50 95 L5 50 Z" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
-      <!-- Inner crosshair -->
-      <line x1="50" y1="18" x2="50" y2="82" stroke="rgba(255,255,255,0.14)" stroke-width="0.8"/>
-      <line x1="18" y1="50" x2="82" y2="50" stroke="rgba(255,255,255,0.14)" stroke-width="0.8"/>
-      <!-- Center spark -->
-      <circle cx="50" cy="50" r="4" fill="#00d4ff" filter="url(#glow-filter)"/>
-      <circle cx="50" cy="50" r="2.5" fill="white"/>
-    </svg>
-  </div>
+  <svg class="hero-mark" viewBox="0 0 64 64" fill="none" aria-label="Flint">
+    <path d="M32 3 L61 32 L32 61 L3 32 Z" stroke="rgba(255,255,255,0.72)" stroke-width="1.25"/>
+    <path d="M32 3 L61 32 L32 32 Z" fill="rgba(255,255,255,0.10)"/>
+    <path d="M32 3 L3 32 L32 32 Z" fill="rgba(255,255,255,0.05)"/>
+    <path d="M32 61 L61 32 L32 32 Z" fill="rgba(255,255,255,0.04)"/>
+    <line x1="32" y1="10" x2="32" y2="54" stroke="rgba(255,255,255,0.12)" stroke-width="0.75"/>
+    <line x1="10" y1="32" x2="54" y2="32" stroke="rgba(255,255,255,0.12)" stroke-width="0.75"/>
+    <circle cx="32" cy="32" r="3" fill="rgba(255,255,255,0.85)"/>
+  </svg>
 
   <h1>A browser that stays<br>out of your way.</h1>
   <p class="hero-sub">
-    No Chrome account prompts. No sidebar AI. No update nags. Just a fast,
-    glass-themed window that browses the web and remembers what you tell it to remember.
+    No Chrome account prompts. No sidebar AI. No update nags.
+    A fast, glass-themed window that browses the web and remembers what you tell it to.
   </p>
 
-  <div class="hero-actions">
-    <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" class="btn-primary" target="_blank" rel="noopener">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Download Now
-    </a>
-    <span class="hero-platform">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
-      Windows 10 &amp; 11
-    </span>
-  </div>
+  <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" class="btn-primary" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download Now
+  </a>
+  <p class="hero-meta">Windows 10 &amp; 11 &nbsp;·&nbsp; Free &nbsp;·&nbsp; v0.2.9</p>
 
-  <div class="hero-scroll" aria-hidden="true">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
+  <div class="hero-scroll">
+    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
 </section>
 
 
-<!-- PERFORMANCE STRIP -->
+<!-- STAT STRIP -->
 <div class="stat-strip">
   <div class="stat-strip-inner">
     <div class="stat-item reveal">
-      <div class="stat-value">Less<span> RAM</span></div>
+      <div class="stat-val">Less RAM</div>
       <div class="stat-label">Significantly lighter than Chrome or Edge under the same workload</div>
     </div>
-    <div class="stat-item reveal reveal-delay-1">
-      <div class="stat-value">0<span> Ads</span></div>
-      <div class="stat-label">Network-level ad blocking on by default, before requests leave the machine</div>
+    <div class="stat-item reveal d1">
+      <div class="stat-val">0 ads</div>
+      <div class="stat-label">Network-level blocking before requests leave the machine, on by default</div>
     </div>
-    <div class="stat-item reveal reveal-delay-2">
-      <div class="stat-value">0<span> Accounts</span></div>
-      <div class="stat-label">No sign-in, no sync, no telemetry. Everything stays on your machine</div>
+    <div class="stat-item reveal d2">
+      <div class="stat-val">0 accounts</div>
+      <div class="stat-label">No sign-in, no sync, no telemetry. Everything stays local</div>
     </div>
   </div>
 </div>
@@ -136,85 +86,114 @@
 <!-- PEGBOARD -->
 <section class="pegboard-section">
   <div class="pegboard-layout">
-    <div class="pegboard-text reveal">
-      <div class="section-label">The Pegboard</div>
-      <h2 class="section-title">A home page you actually build yourself.</h2>
-      <p class="section-sub">
-        The home page is a freeform canvas. Drop tiles wherever you want. Arrange them.
-        Leave them. It persists exactly as you left it. No feed, no speed dial,
-        no suggestions you didn't ask for.
+
+    <div class="reveal">
+      <div class="eyebrow">The Pegboard</div>
+      <h2 class="section-title">A home page you actually build.</h2>
+      <p class="section-body">
+        The home page is a freeform canvas. Drop tiles wherever you want, arrange them however you want,
+        and they stay exactly as you left them. No feed. No speed dial. No suggestions.
       </p>
-      <ul class="pegboard-bullets" style="margin-top:24px">
+      <ul class="peg-bullets">
         <li>Notes with drawing mode and inline checklists</li>
         <li>Shortcuts with custom icons or favicons</li>
-        <li>Live weather forecast with animated conditions</li>
-        <li>System monitor showing CPU, RAM, and Flint's own footprint</li>
+        <li>Live weather forecast with animated SVG conditions</li>
+        <li>System monitor: CPU, RAM, Flint's own memory footprint</li>
         <li>Clock, timer, stopwatch, recent history, and photo tiles</li>
-        <li>Everything snaps to a 32px grid with real collision detection</li>
+        <li>32px snap grid with full collision detection</li>
       </ul>
     </div>
 
-    <div class="pegboard-demo reveal reveal-delay-1" aria-hidden="true">
-      <div class="demo-tiles">
-        <!-- Clock tile -->
-        <div class="demo-tile clock">
-          <div class="demo-clock-time" id="demo-clock">--:--</div>
-          <div class="demo-clock-date" id="demo-date">Wed, Jun 11</div>
+    <div class="peg-canvas reveal d1" aria-hidden="true">
+      <div class="peg-canvas-inner">
+
+        <!-- Clock -->
+        <div class="tile tile-clock">
+          <div class="tile-clock-time" id="demo-time">--:--</div>
+          <div class="tile-clock-date" id="demo-date">Wed, Jun 11</div>
         </div>
-        <!-- Note tile -->
-        <div class="demo-tile note">
-          <div class="demo-tile-title">Notes</div>
-          <div class="demo-note-lines">
-            <div class="demo-note-line" style="width:100%"></div>
-            <div class="demo-note-line" style="width:80%"></div>
-            <div class="demo-note-line" style="width:55%"></div>
-            <div class="demo-note-line" style="width:70%"></div>
+
+        <!-- Note -->
+        <div class="tile tile-note">
+          <div class="tile-hdr">Notes</div>
+          <div class="tile-note-lines">
+            <div class="tile-note-line" style="width:100%"></div>
+            <div class="tile-note-line" style="width:78%"></div>
+            <div class="tile-note-line" style="width:52%"></div>
+            <div class="tile-note-line" style="width:68%"></div>
           </div>
         </div>
+
         <!-- Shortcuts -->
-        <div class="demo-tile shortcut">
-          <div class="demo-shortcut-icon">&#127760;</div>
-          <div class="demo-shortcut-label">Browse</div>
+        <div class="tile tile-shortcut">
+          <div class="tile-shortcut-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <div class="tile-shortcut-label">Web</div>
         </div>
-        <div class="demo-tile shortcut">
-          <div class="demo-shortcut-icon">&#128187;</div>
-          <div class="demo-shortcut-label">Code</div>
+        <div class="tile tile-shortcut">
+          <div class="tile-shortcut-icon">
+            <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div class="tile-shortcut-label">Code</div>
         </div>
+
         <!-- System monitor -->
-        <div class="demo-tile sysmon">
-          <div class="demo-tile-title">System</div>
-          <div class="demo-bar-wrap">
-            <div class="demo-bar-row">
-              <div class="demo-bar-label">CPU</div>
-              <div class="demo-bar-track"><div class="demo-bar-fill" style="width:34%"></div></div>
-              <div class="demo-bar-val">34%</div>
+        <div class="tile tile-sysmon">
+          <div class="tile-hdr">System</div>
+          <div class="tile-bars">
+            <div class="tile-bar-row">
+              <div class="tile-bar-lbl">CPU</div>
+              <div class="tile-bar-track"><div class="tile-bar-fill" style="width:34%"></div></div>
+              <div class="tile-bar-val">34%</div>
             </div>
-            <div class="demo-bar-row">
-              <div class="demo-bar-label">RAM</div>
-              <div class="demo-bar-track"><div class="demo-bar-fill" style="width:61%"></div></div>
-              <div class="demo-bar-val">61%</div>
+            <div class="tile-bar-row">
+              <div class="tile-bar-lbl">RAM</div>
+              <div class="tile-bar-track"><div class="tile-bar-fill" style="width:61%"></div></div>
+              <div class="tile-bar-val">61%</div>
             </div>
-            <div class="demo-bar-row">
-              <div class="demo-bar-label">Flint</div>
-              <div class="demo-bar-track"><div class="demo-bar-fill" style="width:18%"></div></div>
-              <div class="demo-bar-val">218MB</div>
+            <div class="tile-bar-row">
+              <div class="tile-bar-lbl">Flint</div>
+              <div class="tile-bar-track"><div class="tile-bar-fill" style="width:18%"></div></div>
+              <div class="tile-bar-val">218MB</div>
             </div>
           </div>
         </div>
+
         <!-- Weather -->
-        <div class="demo-tile weather">
-          <div class="demo-tile-title">Weather</div>
-          <div class="demo-weather-row">
-            <div style="font-size:32px;line-height:1">&#9728;</div>
+        <div class="tile tile-weather">
+          <div class="tile-hdr">Weather</div>
+          <div class="tile-weather-main">
+            <!-- hand-drawn sun: circle + 8 short lines -->
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="4"/>
+              <line x1="12" y1="20" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="4" y2="12"/>
+              <line x1="20" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
             <div>
-              <div class="demo-weather-temp">72&deg;F</div>
-              <div class="demo-weather-info">
-                <span>Mostly sunny</span>
-                <span style="color:rgba(255,255,255,0.2)">New York, NY</span>
-              </div>
+              <div class="tile-weather-temp">72&deg;</div>
+              <div class="tile-weather-info">Mostly sunny<br>New York, NY</div>
             </div>
           </div>
         </div>
+
+        <!-- Recent -->
+        <div class="tile tile-recent">
+          <div class="tile-hdr">Recent</div>
+          <div class="tile-recent-rows">
+            <div class="tile-recent-row">github.com/sm1else-bot/flint</div>
+            <div class="tile-recent-row">news.ycombinator.com</div>
+            <div class="tile-recent-row">en.wikipedia.org/wiki/Flint</div>
+            <div class="tile-recent-row">developer.mozilla.org</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -225,209 +204,176 @@
 <section>
   <div class="section-inner">
     <div class="reveal">
-      <div class="section-label">Why Flint</div>
-      <h2 class="section-title">Built for people who know what they want.</h2>
-      <p class="section-sub">Every feature exists because someone needed it, not because a product manager needed a slide.</p>
+      <div class="eyebrow">Features</div>
+      <h2 class="section-title">Built to be used, not demoed.</h2>
+      <p class="section-body">Every feature here was written because someone needed it. Nothing was added for a press release.</p>
     </div>
 
     <div class="features-grid">
-      <div class="feature-card reveal reveal-delay-1">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+
+      <div class="feat-card reveal d1">
+        <div class="feat-icon">
+          <!-- shield: a GDI+-style outline shield -->
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <div class="feature-title">Network-level ad blocking</div>
-        <div class="feature-desc">Blocks at the WebView2 layer before requests leave the machine. Uses the StevenBlack unified hosts list, refreshed every seven days. On by default.</div>
+        <div class="feat-title">Network-level ad blocking</div>
+        <div class="feat-desc">Blocks at the WebView2 request layer before anything leaves the machine. StevenBlack hosts list, refreshed every 7 days. On by default.</div>
       </div>
 
-      <div class="feature-card reveal reveal-delay-2">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <div class="feat-card reveal d2">
+        <div class="feat-icon">
+          <!-- lock: rectangle body + arc shackle -->
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
         </div>
-        <div class="feature-title">Complete privacy</div>
-        <div class="feature-desc">No analytics. No crash reports. No accounts. The only external connections are pages you navigate to and optional weather data.</div>
+        <div class="feat-title">No accounts, no telemetry</div>
+        <div class="feat-desc">Nothing phones home. No analytics, no crash reports. Your browsing history is a file on your own machine.</div>
       </div>
 
-      <div class="feature-card reveal reveal-delay-3">
-        <div class="feature-icon">
+      <div class="feat-card reveal d3">
+        <div class="feat-icon">
+          <!-- puzzle piece approximation with rectangles and arcs -->
           <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         </div>
-        <div class="feature-title">Chrome extensions</div>
-        <div class="feature-desc">Load any unpacked Chrome extension from a local folder. Manifest V2 and V3 both supported. Each extension gets an Open button for its popup.</div>
+        <div class="feat-title">Chrome extensions</div>
+        <div class="feat-desc">Load any unpacked Chrome extension from a local folder. Manifest V2 and V3 both work. Each extension gets an Open button for its popup.</div>
       </div>
 
-      <div class="feature-card reveal reveal-delay-1">
-        <div class="feature-icon">
+      <div class="feat-card reveal d1">
+        <div class="feat-icon">
+          <!-- monitor outline: rectangle + stand + base -->
           <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </div>
-        <div class="feature-title">Glass-themed window</div>
-        <div class="feature-desc">Mica and Acrylic backdrop via DWM. Semi-transparent glass panels. The Pegboard canvas inherits the window's backdrop so tiles float on blurred desktop.</div>
+        <div class="feat-title">Mica glass window</div>
+        <div class="feat-desc">DWM Mica and Acrylic backdrop. The Pegboard canvas inherits the window backdrop so tiles visually float on the desktop.</div>
       </div>
 
-      <div class="feature-card reveal reveal-delay-2">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <div class="feat-card reveal d2">
+        <div class="feat-icon">
+          <!-- keyboard: rectangle with 3 small rects for keys -->
+          <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="6" y1="14" x2="18" y2="14"/></svg>
         </div>
-        <div class="feature-title">Keyboard-first shortcuts</div>
-        <div class="feature-desc">A low-level keyboard hook intercepts shortcuts before Chromium sees them. They work inside pages, text fields, and captchas without exception.</div>
+        <div class="feat-title">Low-level keyboard hook</div>
+        <div class="feat-desc">Shortcuts intercept before Chromium. They fire from inside pages, text fields, and captchas. No exceptions.</div>
       </div>
 
-      <div class="feature-card reveal reveal-delay-3">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      <div class="feat-card reveal d3">
+        <div class="feat-icon">
+          <!-- download arrow: line going down into tray -->
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </div>
-        <div class="feature-title">Address bar autocomplete</div>
-        <div class="feature-desc">Dark glass dropdown with up to six history matches. Favicon, title, and dimmed URL for each result. Arrow keys navigate, Enter confirms, Escape closes.</div>
+        <div class="feat-title">Download manager</div>
+        <div class="feat-desc">Floating dropdown panel with live progress bars, open and dismiss buttons, and a badge on the toolbar showing in-progress count.</div>
       </div>
+
     </div>
   </div>
 </section>
 
 
 <!-- PRIVACY -->
-<section style="background:rgba(255,255,255,0.018);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+<section class="privacy-section">
   <div class="section-inner">
     <div class="privacy-layout">
-      <div class="reveal">
-        <div class="section-label">Privacy</div>
-        <h2 class="section-title">Everything stays on your machine.</h2>
-        <p class="section-sub">
-          Flint makes no external connections except the ones you explicitly trigger.
-          Your browsing history, bookmarks, and settings live in a single JSON file at
-          <code style="font-size:13px;color:var(--text2)">%LocalAppData%\Flint\profile.json</code>.
-        </p>
 
-        <ul class="privacy-list" style="margin-top:32px">
-          <li>
-            <svg class="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <div class="reveal">
+        <div class="eyebrow">Privacy</div>
+        <h2 class="section-title">Your data is a file on your own machine.</h2>
+        <p class="section-body">Bookmarks, history, and settings live at <code style="font-size:12px;color:var(--text2)">%LocalAppData%\Flint\profile.json</code>. Nothing leaves without you navigating somewhere.</p>
+
+        <ul class="priv-list" style="margin-top:28px">
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             No analytics or crash reporting
           </li>
-          <li>
-            <svg class="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            No account sign-in or sync
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            No account sign-in or cloud sync
           </li>
-          <li>
-            <svg class="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             No background update processes
           </li>
-          <li>
-            <svg class="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            No sidebar AI or suggestions
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            No AI sidebar or suggestions
           </li>
         </ul>
       </div>
 
-      <div class="reveal reveal-delay-1">
-        <div class="section-label" style="color:var(--text3)">What does connect</div>
-        <h3 style="font-size:20px;font-weight:600;color:white;margin:16px 0 8px;letter-spacing:-0.01em">Only when you use it.</h3>
-        <p style="font-size:14px;color:var(--text2);margin-bottom:24px">These are the only outbound connections Flint makes, all opt-in or user-triggered.</p>
-
-        <ul class="privacy-list">
-          <li>
-            <svg class="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div class="reveal d1">
+        <div class="eyebrow">What does connect</div>
+        <h3 style="font-size:18px;font-weight:600;color:white;margin:14px 0 8px;letter-spacing:-0.01em">Only when you use it.</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px">These are the only outbound connections Flint ever makes.</p>
+        <ul class="priv-list">
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Pages you navigate to
           </li>
-          <li>
-            <svg class="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Favicon lookups via Google favicon service
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Favicon lookups via Google (for tab icons)
           </li>
-          <li>
-            <svg class="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Ad-block list refresh from GitHub (every 7 days)
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Ad-block list refresh from GitHub, every 7 days
           </li>
-          <li>
-            <svg class="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Open-Meteo weather data (only if you add a weather tile)
+          <li class="priv-row">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Open-Meteo weather, only if you add a weather tile
           </li>
         </ul>
       </div>
+
     </div>
   </div>
 </section>
 
 
-<!-- KEYBOARD SHORTCUTS -->
+<!-- SHORTCUTS -->
 <section class="shortcuts-section">
   <div class="section-inner">
     <div class="reveal">
-      <div class="section-label">Keyboard Shortcuts</div>
-      <h2 class="section-title">Work at the speed of thought.</h2>
-      <p class="section-sub">All shortcuts are intercepted at the system level before WebView2 sees them. They work from any context, no exceptions.</p>
+      <div class="eyebrow">Keyboard shortcuts</div>
+      <h2 class="section-title">Work at full speed.</h2>
+      <p class="section-body">A low-level system hook intercepts every shortcut before WebView2 sees them. They work from inside pages, forms, and captchas.</p>
     </div>
 
-    <table class="shortcuts-table reveal" style="margin-top:40px">
-      <thead>
-        <tr>
-          <th>Shortcut</th>
-          <th>Action</th>
-          <th>Shortcut</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>T</kbd></td><td>New tab</td>
-          <td><kbd>Ctrl</kbd><kbd>W</kbd></td><td>Close tab</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>Tab</kbd></td><td>Next tab</td>
-          <td><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Tab</kbd></td><td>Previous tab</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>1-8</kbd></td><td>Switch to tab by index</td>
-          <td><kbd>Ctrl</kbd><kbd>9</kbd></td><td>Last tab</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></td><td>Reopen closed tab</td>
-          <td><kbd>Ctrl</kbd><kbd>L</kbd></td><td>Focus address bar</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>R</kbd> / <kbd>F5</kbd></td><td>Reload</td>
-          <td><kbd>Escape</kbd></td><td>Stop loading</td>
-        </tr>
-        <tr>
-          <td><kbd>Alt</kbd><kbd>Left</kbd> / <kbd>Right</kbd></td><td>Back / forward</td>
-          <td><kbd>Alt</kbd><kbd>Home</kbd></td><td>Home page</td>
-        </tr>
-        <tr>
-          <td><kbd>F11</kbd></td><td>Toggle fullscreen</td>
-          <td><kbd>Ctrl</kbd><kbd>D</kbd></td><td>Bookmark / unbookmark</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>B</kbd></td><td>Bookmarks</td>
-          <td><kbd>Ctrl</kbd><kbd>H</kbd></td><td>History</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>J</kbd></td><td>Downloads</td>
-          <td><kbd>Ctrl</kbd><kbd>,</kbd></td><td>Settings</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd><kbd>+</kbd> / <kbd>-</kbd></td><td>Zoom in / out</td>
-          <td><kbd>Ctrl</kbd><kbd>0</kbd></td><td>Reset zoom</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="shortcuts-grid reveal" style="margin-top:36px">
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>T</kbd></div><span>New tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>W</kbd></div><span>Close tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Tab</kbd></div><span>Next tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Tab</kbd></div><span>Previous tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>1-8</kbd></div><span>Switch to tab by index</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>9</kbd></div><span>Last tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></div><span>Reopen closed tab</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>L</kbd></div><span>Focus address bar</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>R</kbd> / <kbd>F5</kbd></div><span>Reload</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Escape</kbd></div><span>Stop loading</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Alt</kbd><kbd>Left / Right</kbd></div><span>Back / forward</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>F11</kbd></div><span>Toggle fullscreen</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>D</kbd></div><span>Bookmark / unbookmark</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></div><span>Bookmarks</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>H</kbd></div><span>History</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>J</kbd></div><span>Downloads</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>,</kbd></div><span>Settings</span></div>
+      <div class="shortcut-row"><div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>+ / -</kbd></div><span>Zoom in / out</span></div>
+    </div>
   </div>
 </section>
 
 
-<!-- DOWNLOAD CTA -->
+<!-- DOWNLOAD -->
 <section class="download-section">
   <div class="download-inner">
     <div class="reveal">
-      <div class="section-label">Download</div>
+      <div class="eyebrow">Download</div>
       <h2 class="section-title">Ready when you are.</h2>
-      <p class="section-sub">
-        A single installer, no bloat, no account. Your profile lives locally at
-        <code style="font-size:13px;color:var(--text2)">%LocalAppData%\Flint\</code>
-        and survives reinstalls.
-      </p>
-      <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" class="btn-primary" target="_blank" rel="noopener" style="display:inline-flex;margin:0 auto">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
+      <p class="section-body">One installer. No account. Profile stored locally at <code style="font-size:12px;color:var(--text2)">%LocalAppData%\Flint\</code> and survives reinstalls.</p>
+      <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" class="btn-primary" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download FlintSetup.exe
       </a>
-      <p class="download-req">Requires Windows 10 or 11. Edge WebView2 Runtime is pre-installed on most Windows 11 machines.</p>
+      <p class="download-req">Windows 10 or 11 required. Edge WebView2 Runtime is pre-installed on most Windows 11 machines.</p>
     </div>
   </div>
 </section>
@@ -437,10 +383,9 @@
 <footer>
   <div class="footer-inner">
     <a href="index.html" class="footer-logo">
-      <svg class="logo-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M24 4 L44 24 L24 44 L4 24 Z" fill="rgba(0,212,255,0.06)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-        <path d="M24 4 L44 24 L24 24 Z" fill="rgba(255,255,255,0.07)"/>
-        <circle cx="24" cy="24" r="2" fill="rgba(0,212,255,0.7)"/>
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 2 L30 16 L16 30 L2 16 Z" stroke="rgba(255,255,255,0.35)" stroke-width="1.25"/>
+        <circle cx="16" cy="16" r="1.5" fill="rgba(255,255,255,0.5)"/>
       </svg>
       Flint
     </a>
@@ -455,33 +400,24 @@
 
 
 <script>
-  // Live clock for demo tile
-  function updateDemoClock() {
-    const el = document.getElementById('demo-clock');
-    const ed = document.getElementById('demo-date');
-    if (!el) return;
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    el.textContent = h + ':' + m;
+  // Live clock in the pegboard demo
+  function tick() {
+    const t = document.getElementById('demo-time');
+    const d = document.getElementById('demo-date');
+    if (!t) return;
+    const n = new Date();
+    t.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    ed.textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+    d.textContent = days[n.getDay()] + ', ' + months[n.getMonth()] + ' ' + n.getDate();
   }
-  updateDemoClock();
-  setInterval(updateDemoClock, 10000);
+  tick(); setInterval(tick, 15000);
 
   // Scroll reveal
-  const revealEls = document.querySelectorAll('.reveal');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.12 });
-  revealEls.forEach(el => observer.observe(el));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.10 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 </script>
 
 </body>

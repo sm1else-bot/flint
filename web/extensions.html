@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Top extensions for Flint browser. Load any unpacked Chrome extension from a local folder. Manifest V2 and V3 both supported.">
+  <meta name="description" content="The best unpacked Chrome extensions for Flint browser. Open source, GitHub releases.">
   <title>Extensions - Flint</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -13,25 +13,18 @@
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
-      <svg class="logo-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="lg-nav-ext" x1="24" y1="4" x2="24" y2="44" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-            <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.7"/>
-          </linearGradient>
-        </defs>
-        <path d="M24 4 L44 24 L24 44 L4 24 Z" fill="rgba(0,212,255,0.08)" stroke="url(#lg-nav-ext)" stroke-width="1.5"/>
-        <path d="M24 4 L44 24 L24 24 Z" fill="rgba(255,255,255,0.10)"/>
-        <path d="M24 4 L4 24 L24 24 Z" fill="rgba(255,255,255,0.06)"/>
-        <circle cx="24" cy="24" r="2.5" fill="rgba(0,212,255,0.9)"/>
-        <line x1="24" y1="11" x2="24" y2="37" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
-        <line x1="11" y1="24" x2="37" y2="24" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 2 L30 16 L16 30 L2 16 Z" stroke="rgba(255,255,255,0.75)" stroke-width="1.25"/>
+        <path d="M16 2 L30 16 L16 16 Z" fill="rgba(255,255,255,0.09)"/>
+        <line x1="16" y1="7" x2="16" y2="25" stroke="rgba(255,255,255,0.15)" stroke-width="0.75"/>
+        <line x1="7" y1="16" x2="25" y2="16" stroke="rgba(255,255,255,0.15)" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="1.75" fill="rgba(255,255,255,0.8)"/>
       </svg>
       Flint
     </a>
     <div class="nav-links">
-      <a href="extensions.html" style="color:rgba(255,255,255,0.9)">Extensions</a>
-      <a href="https://github.com/sm1else-bot/flint" target="_blank" rel="noopener" class="nav-github">GitHub</a>
+      <a href="extensions.html" style="color:rgba(255,255,255,0.88)">Extensions</a>
+      <a href="https://github.com/sm1else-bot/flint" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/sm1else-bot/flint/releases/tag/0.2.9" target="_blank" rel="noopener" class="btn-nav">Download</a>
     </div>
   </div>
@@ -40,33 +33,30 @@
 
 <!-- HERO -->
 <section class="ext-hero">
-  <div class="hero-grid" aria-hidden="true" style="mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%);-webkit-mask-image:radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%)"></div>
+  <div class="dot-grid"></div>
   <div class="reveal">
-    <div class="section-label">Extensions</div>
-    <h1 class="section-title" style="margin-bottom:14px">The best extensions for Flint.</h1>
-    <p class="section-sub">
-      Flint loads any unpacked Chrome extension from a local folder. These are the ones worth having.
-      Each one is open source and links directly to its GitHub releases page.
-    </p>
+    <div class="eyebrow">Extensions</div>
+    <h1 class="section-title" style="margin-bottom:14px">The best ones, with direct links.</h1>
+    <p class="section-body" style="margin:0 auto">Flint loads any unpacked Chrome extension from a local folder. These are the ones worth having. All open source, all linking directly to GitHub releases.</p>
   </div>
 </section>
 
 
 <!-- HOW TO INSTALL -->
-<div class="ext-install-note reveal">
-  <div class="install-card">
+<div class="install-card reveal">
+  <div class="install-card-inner">
     <div class="install-icon">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <!-- folder open outline, GDI+ style -->
+      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
     </div>
     <div>
       <div class="install-title">How to install an extension in Flint</div>
-      <div class="install-desc">Download the extension release zip, extract it to a folder, then add it in Flint's settings.</div>
       <ol class="install-steps">
-        <li>Download the release zip from the extension's GitHub releases page</li>
-        <li>Extract the zip to a permanent folder on your machine</li>
-        <li>Open Flint Settings (Ctrl+,) and go to Features &gt; Extensions</li>
+        <li>Download the release zip from the extension's GitHub releases page below</li>
+        <li>Extract it to a permanent folder on your machine</li>
+        <li>Open Flint Settings with <kbd>Ctrl</kbd><kbd>,</kbd> and go to Features, then Extensions</li>
         <li>Click "Add from folder" and select the extracted folder</li>
-        <li>The extension loads immediately and persists across restarts</li>
+        <li>Extension loads immediately and persists across restarts</li>
       </ol>
     </div>
   </div>
@@ -75,174 +65,119 @@
 
 <!-- EXTENSIONS GRID -->
 <div class="ext-grid-wrap">
-  <div class="ext-grid-title reveal">Essential extensions</div>
   <div class="ext-grid">
 
     <!-- uBlock Origin -->
     <a class="ext-card reveal" href="https://github.com/gorhill/uBlock/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#00d4ff">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <span class="ext-badge">Blocking</span>
+        <span class="ext-cat">Blocking</span>
       </div>
       <div class="ext-name">uBlock Origin</div>
-      <div class="ext-desc">
-        The benchmark content and ad blocker. Works at the network request level with
-        custom filter lists and dynamic blocking rules. Pairs with Flint's built-in host
-        blocker for double-layer protection.
-      </div>
+      <div class="ext-desc">The benchmark content and ad blocker. Network-level request filtering with custom lists and dynamic rules. Works alongside Flint's built-in host blocking for double-layer coverage.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           gorhill/uBlock
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
     <!-- Dark Reader -->
-    <a class="ext-card reveal reveal-delay-1" href="https://github.com/darkreader/darkreader/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#a78bfa">
-            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-          </svg>
+    <a class="ext-card reveal d1" href="https://github.com/darkreader/darkreader/releases" target="_blank" rel="noopener">
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         </div>
-        <span class="ext-badge">Appearance</span>
+        <span class="ext-cat">Appearance</span>
       </div>
       <div class="ext-name">Dark Reader</div>
-      <div class="ext-desc">
-        Intelligent dark mode for every website. Dynamically inverts colors,
-        adjusts contrast and brightness, and keeps images vivid. Works on sites
-        that don't have their own dark theme.
-      </div>
+      <div class="ext-desc">Intelligent dark mode for every website. Dynamically inverts colors and adjusts brightness while keeping images vivid. Works on sites that never built their own dark theme.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           darkreader/darkreader
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
     <!-- Vimium -->
-    <a class="ext-card reveal reveal-delay-2" href="https://github.com/philc/vimium/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#f59e0b">
-            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-          </svg>
+    <a class="ext-card reveal d2" href="https://github.com/philc/vimium/releases" target="_blank" rel="noopener">
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
         </div>
-        <span class="ext-badge">Productivity</span>
+        <span class="ext-cat">Productivity</span>
       </div>
       <div class="ext-name">Vimium</div>
-      <div class="ext-desc">
-        Navigate the web with Vim-style keyboard commands. Follow links without
-        touching the mouse, search through open tabs, and move through history
-        with a keystroke.
-      </div>
+      <div class="ext-desc">Navigate the web with Vim-style keyboard commands. Follow links, switch tabs, and move through history without touching the mouse.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           philc/vimium
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
     <!-- SponsorBlock -->
     <a class="ext-card reveal" href="https://github.com/ajayyy/SponsorBlock/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#22c55e">
-            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-          </svg>
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
         </div>
-        <span class="ext-badge">Video</span>
+        <span class="ext-cat">Video</span>
       </div>
       <div class="ext-name">SponsorBlock</div>
-      <div class="ext-desc">
-        Community-powered YouTube sponsor segment skipping. Also handles intros,
-        outros, self-promotion, and filler content. Open source, no account required,
-        contributions are anonymous.
-      </div>
+      <div class="ext-desc">Community-powered YouTube sponsor segment skipping. Handles intros, outros, self-promotion, and filler. Open source, anonymous contributions, no account required.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           ajayyy/SponsorBlock
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
     <!-- ClearURLs -->
-    <a class="ext-card reveal reveal-delay-1" href="https://github.com/ClearURLs/Addon/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#f97316">
-            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-          </svg>
+    <a class="ext-card reveal d1" href="https://github.com/ClearURLs/Addon/releases" target="_blank" rel="noopener">
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         </div>
-        <span class="ext-badge">Privacy</span>
+        <span class="ext-cat">Privacy</span>
       </div>
       <div class="ext-name">ClearURLs</div>
-      <div class="ext-desc">
-        Strips tracking parameters from URLs automatically. Every link you visit
-        or share is cleaned of UTM tags, click IDs, and other tracking garbage
-        before the request leaves the browser.
-      </div>
+      <div class="ext-desc">Strips tracking parameters from every URL automatically. UTM tags, click IDs, and other tracking garbage removed before the request fires.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           ClearURLs/Addon
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
     <!-- Stylus -->
-    <a class="ext-card reveal reveal-delay-2" href="https://github.com/openstyles/stylus/releases" target="_blank" rel="noopener">
-      <div class="ext-card-head">
-        <div class="ext-icon-wrap">
-          <svg viewBox="0 0 24 24" style="stroke:#ec4899">
-            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
+    <a class="ext-card reveal d2" href="https://github.com/openstyles/stylus/releases" target="_blank" rel="noopener">
+      <div class="ext-card-top">
+        <div class="ext-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </div>
-        <span class="ext-badge">Customization</span>
+        <span class="ext-cat">Customization</span>
       </div>
       <div class="ext-name">Stylus</div>
-      <div class="ext-desc">
-        Write and apply custom CSS to any website. Use community-made userstyles
-        or write your own. Make any site look exactly how you want, down to the
-        pixel.
-      </div>
+      <div class="ext-desc">Write and apply custom CSS to any website. Use community userstyles or write your own. Make any site look exactly how you want, pixel by pixel.</div>
       <div class="ext-footer">
-        <div class="ext-source">
+        <div class="ext-repo">
           <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           openstyles/stylus
         </div>
-        <div class="ext-link">
-          Releases
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <div class="ext-cta">Releases <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
       </div>
     </a>
 
@@ -254,10 +189,9 @@
 <footer>
   <div class="footer-inner">
     <a href="index.html" class="footer-logo">
-      <svg class="logo-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M24 4 L44 24 L24 44 L4 24 Z" fill="rgba(0,212,255,0.06)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-        <path d="M24 4 L44 24 L24 24 Z" fill="rgba(255,255,255,0.07)"/>
-        <circle cx="24" cy="24" r="2" fill="rgba(0,212,255,0.7)"/>
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 2 L30 16 L16 30 L2 16 Z" stroke="rgba(255,255,255,0.35)" stroke-width="1.25"/>
+        <circle cx="16" cy="16" r="1.5" fill="rgba(255,255,255,0.5)"/>
       </svg>
       Flint
     </a>
@@ -270,19 +204,11 @@
   </div>
 </footer>
 
-
 <script>
-  // Scroll reveal
-  const revealEls = document.querySelectorAll('.reveal');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
-      }
-    });
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
   }, { threshold: 0.10 });
-  revealEls.forEach(el => observer.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 </script>
 
 </body>
