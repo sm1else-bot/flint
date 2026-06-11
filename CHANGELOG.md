@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Performance
+- **Narrow WebResourceRequested filter** — changed ad-blocker filter from `CoreWebView2WebResourceContext.All` to `Script` + `XmlHttpRequest` only. The handler was previously intercepting every resource request (images, fonts, CSS, media) on the UI thread, blocking each one while doing a URI parse and hash lookup. Now only script and XHR requests are inspected, eliminating the cross-process marshal overhead for all other resource types. Primary fix for low Speedometer scores.
+- **Chromium performance flags** — `CoreWebView2EnvironmentOptions` now passes `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-accelerated-2d-canvas`, `--use-angle=d3d11`, `--disable-renderer-backgrounding`, and `--max-tiles-for-interest-area=512` to the Chromium process at startup. GPU rasterization and zero-copy reduce CPU load on the render side, freeing more cycles for V8.
+- **Async history save** — `store.AddHistory` in `NavigationCompleted` is now dispatched via `Task.Run` so the synchronous `File.WriteAllText` no longer blocks the UI thread between page loads.
+- **Pre-rendered SparkFrame bitmaps** — the six loading-animation frames are now rendered once into a static `Bitmap[]` array at startup instead of allocating a new `Bitmap`, `Graphics`, and `Pen` on every 60ms timer tick. Eliminates per-tick GDI+ allocation and GC pressure during page loads.
+- **Cached active download count** — `GlassButton.OnPaint` no longer performs a LINQ scan over the downloads list and a three-level parent-chain cast on every repaint. The active download count is now maintained as a field (`_activeDownloadCount`) updated only when download state actually changes.
+- **User agent updated to Chrome/136** — previously reported `Chrome/124.0.0.0` (8 versions behind the bundled runtime). Updated to `Chrome/136.0.0.0` so sites serve current, optimised code paths.
+
 ### Added
 - **Address bar auto-focus on new tab** — opening a new tab (Ctrl+T, + button, or any other path) immediately focuses the address bar and selects all text so you can start typing right away.
 - **Address bar autocomplete dropdown** — typing in the address bar shows a borderless dark glass dropdown (same style as download dropdown) with up to 6 history matches (URL or title, most recent first) plus one "Search … with [Engine]" row per configured engine when the input doesn't look like a URL. Each history row shows the cached favicon, page title, and dimmed URL. ↓/↑ navigate rows from the keyboard, Enter accepts, Escape closes. Clicking a row navigates immediately. The dropdown hides when the address bar loses focus, when navigation starts, or when the box is cleared.

@@ -25,6 +25,7 @@ public partial class Form1 : Form
     private readonly List<TabEntry> tabs = new();
     private readonly Stack<string> closedTabUrls = new();
     private readonly List<DownloadEntry> downloads = new();
+    private int _activeDownloadCount;
     private GlassButton downloadsButton = null!;
     private DownloadDropdownForm? dropdownForm;
     private readonly Dictionary<string, (Panel FillPanel, Label SizeLabel)> dropdownEntries = new();
@@ -376,9 +377,17 @@ public partial class Form1 : Form
                 "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
+            var options = new CoreWebView2EnvironmentOptions(
+                "--enable-gpu-rasterization " +
+                "--enable-zero-copy " +
+                "--enable-accelerated-2d-canvas " +
+                "--use-angle=d3d11 " +
+                "--disable-renderer-backgrounding " +
+                "--max-tiles-for-interest-area=512");
             sharedEnvironment = await CoreWebView2Environment.CreateAsync(
                 browserExecutableFolder: null,
-                userDataFolder: userDataFolder);
+                userDataFolder: userDataFolder,
+                options: options);
 
             browserReady = true;
             await AdBlocker.InitializeAsync();
@@ -409,11 +418,12 @@ public partial class Form1 : Form
         s.AreDefaultScriptDialogsEnabled = true;
         s.AreDefaultContextMenusEnabled = true;
         s.IsStatusBarEnabled = false;
-        s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Flint/1.0";
+        s.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Flint/1.0";
 
         tab.View.CoreWebView2.WebMessageReceived += WebMessageReceived;
         tab.View.CoreWebView2.DownloadStarting += CoreWebView2_DownloadStarting;
-        tab.View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+        tab.View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.Script);
+        tab.View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.XmlHttpRequest);
         tab.View.CoreWebView2.WebResourceRequested += (_, e) =>
         {
             if (AdBlocker.IsBlocked(e.Request.Uri))
@@ -448,9 +458,9 @@ public partial class Form1 : Form
             {
                 if (tab.TitleButton.IsDisposed) { sparkTimer.Stop(); return; }
                 tab.SparkFrame = (tab.SparkFrame + 1) % 6;
-                tab.TitleButton.Image = MakeSparkFrame(tab.SparkFrame);
+                tab.TitleButton.Image = SparkFrames[tab.SparkFrame];
             };
-            tab.TitleButton.Image = MakeSparkFrame(0);
+            tab.TitleButton.Image = SparkFrames[0];
             sparkTimer.Start();
 
             if (BrowserStore.IsWebUrl(e.Uri))
@@ -476,7 +486,10 @@ public partial class Form1 : Form
 
             string url = tab.View.Source?.AbsoluteUri ?? "";
             if (e.IsSuccess && BrowserStore.IsWebUrl(url))
-                store.AddHistory(url, tab.View.CoreWebView2.DocumentTitle);
+            {
+                string docTitle = tab.View.CoreWebView2.DocumentTitle;
+                _ = Task.Run(() => store.AddHistory(url, docTitle));
+            }
 
             if (tab.ShowingInternal)
                 tab.TitleButton.Image = FlintFavicon();
@@ -1424,6 +1437,7 @@ public partial class Form1 : Form
             TotalBytes = (long)(e.DownloadOperation.TotalBytesToReceive ?? 0UL)
         };
         downloads.Insert(0, entry);
+        _activeDownloadCount = downloads.Count(d => d.State == "In Progress");
 
         BeginInvoke(() => ShowToast($"{entry.FileName} downloading"));
         downloadsButton.Invalidate();
@@ -1464,6 +1478,7 @@ public partial class Form1 : Form
             };
             BeginInvoke(() =>
             {
+                _activeDownloadCount = downloads.Count(d => d.State == "In Progress");
                 downloadsButton.Invalidate();
                 if (dropdownForm != null && !dropdownForm.IsDisposed)
                     dropdownForm.UpdateDisplay();
@@ -1655,6 +1670,8 @@ public partial class Form1 : Form
         g.DrawLine(pen, 5f, 5f, 15f, 15f);
         g.DrawLine(pen, 15f, 5f, 5f, 15f);
     });
+
+    private static readonly Bitmap[] SparkFrames = Enumerable.Range(0, 6).Select(MakeSparkFrame).ToArray();
 
     private static Bitmap MakeSparkFrame(int frame)
     {
@@ -1996,7 +2013,7 @@ public partial class Form1 : Form
             base.OnPaint(e);
             if (Parent is FlowLayoutPanel flow && flow.Parent is TableLayoutPanel grid && grid.Parent is Form1 form1)
             {
-                int activeCount = form1.downloads.Count(d => d.State == "In Progress");
+                int activeCount = form1._activeDownloadCount;
                 if (activeCount > 0)
                 {
                     const int radius = 8;
