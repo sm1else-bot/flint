@@ -8,7 +8,7 @@ A fast, minimal Windows browser with a glass aesthetic and a freeform home canva
 
 Flint is a personal browser built from scratch using WinForms and WebView2. It has no Electron, no bloat, no telemetry. The window is fully borderless with a DWM Mica/Acrylic backdrop — glass panels, custom hit-testing, and all icons drawn in GDI+. The home page is a freeform pinboard called the Pegboard where you place tiles, not a search bar with cards.
 
-It runs as a single self-contained `.exe` (~148 MB, no installer required).
+Distributed as a Windows installer built with Inno Setup.
 
 ---
 
@@ -21,7 +21,7 @@ It runs as a single self-contained `.exe` (~148 MB, no installer required).
 
 ## Installation
 
-Download `Flint.exe` from the latest release and run it. No install step. Profile data is stored at `%LocalAppData%\Flint\`.
+Download `FlintSetup.exe` from the latest release and run the installer. Profile data is stored at `%LocalAppData%\Flint\`.
 
 To build from source:
 
