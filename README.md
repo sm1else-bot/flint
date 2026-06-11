@@ -12,33 +12,14 @@ The home page is a freeform canvas called the Pegboard — you put tiles on it, 
 
 ## Features
 
-**Browsing**
-- Multi-tab with per-tab favicon, mute, and zoom
-- Smart address bar with history autocomplete
-- Built-in ad blocker, on by default
-- Downloads with a live progress dropdown and active badge on the toolbar
-- Zoom per tab — `Ctrl++` / `Ctrl+-` / `Ctrl+0`, range 25%–500%
-- Choice of search engine — DuckDuckGo, Google, Bing, or Brave
-- Fullscreen mode
-- Set as your default browser from Settings
+Flint uses significantly less RAM than Chrome or Edge under the same workload, and real-world download speeds are faster — fewer background processes competing for bandwidth. Benchmark performance is competitive with mainstream Chromium browsers. The ad blocker is on by default and blocks at the network level before requests leave the machine, so it's not just cosmetic filtering.
 
-**The Pegboard** *(home page)*
-- Right-click anywhere to open the tile toolbox
-- Tiles snap to a grid, can't overlap, and save automatically
-- Available tiles: Note, Shortcut, Clock, Label, Divider, Timer/Stopwatch, Recent History, Photo, Weather, System Monitor
-- Notes support freehand drawing and inline checklists
-- Weather tile pulls from Open-Meteo — animated forecasts, °C/°F, custom location
-- System Monitor shows live CPU, RAM, and Flint's own memory footprint
+The home page — the Pegboard — is a freeform canvas where you place tiles: notes with drawing and checklists, shortcuts, a clock, a weather forecast, a system monitor, recent history, photos, timers. It's not a speed dial. It's not a feed. It's a blank surface you build yourself, and it stays exactly how you left it.
 
 **Extensions**
-- Load any unpacked Chrome extension (Manifest V2 or V3) from a local folder
-- Each extension shows an Open button that launches its popup — full functionality, no compromises
+- Load any unpacked Chrome extension from a local folder — Manifest V2 or V3
+- Each installed extension gets an Open button that launches its popup with full functionality
 - Tested with uBlock Origin
-
-**Window**
-- Fully borderless with a glass/Mica backdrop
-- Drag from anywhere in the chrome bar or tab strip
-- Resize from any edge or corner
 
 ---
 
