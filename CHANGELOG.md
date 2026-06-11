@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+---
+
+## [0.2.8] — 2026-06-10
+
 ### Added
-- **Unpacked extension support** — Settings → Features → Extensions section. Click "Add from folder" to load any unpacked Chrome extension (folder containing `manifest.json`). Extensions are loaded via `CoreWebView2Profile.AddBrowserExtensionAsync` and persist in the WebView2 user data folder across restarts. Each installed extension shows its name (read from `manifest.json`) and folder path, with a Remove button. Removing shows a toast and prompts a restart to fully unload. Invalid folders (no `manifest.json`) are rejected with a toast. Compatible with most content-script and `declarativeNetRequest` extensions.
+- **Unpacked extension support** — Settings → Features → Extensions section. Click "Add from folder" to load any unpacked Chrome extension (folder must contain `manifest.json` in its root). Extensions are loaded via `CoreWebView2Profile.AddBrowserExtensionAsync` with `AreBrowserExtensionsEnabled = true` set on the environment, and persist in the WebView2 user data folder across restarts. Each installed extension shows its name (read from `manifest.json`) and folder path with a Remove button. Removing shows a toast prompting a restart to fully unload. Invalid folders are rejected with a clear toast. Compatible with most content-script and `declarativeNetRequest` extensions, including uBlock Origin.
 
 ---
 
