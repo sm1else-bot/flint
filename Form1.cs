@@ -1116,7 +1116,7 @@ public partial class Form1 : Form
         try
         {
             var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
-            long totalBytes = currentProcess.WorkingSet64;
+            long totalBytes = currentProcess.PrivateMemorySize64;
 
             var parentIds = new List<int> { currentProcess.Id };
             if (webView != null)
@@ -1129,10 +1129,16 @@ public partial class Form1 : Form
             {
                 try
                 {
+                    if (webView != null && proc.Id == (int)webView.BrowserProcessId)
+                    {
+                        totalBytes += proc.PrivateMemorySize64;
+                        continue;
+                    }
+
                     int parentId = GetParentProcessId(proc.Id);
                     if (parentIds.Contains(parentId))
                     {
-                        totalBytes += proc.WorkingSet64;
+                        totalBytes += proc.PrivateMemorySize64;
                         if (!parentIds.Contains(proc.Id))
                         {
                             parentIds.Add(proc.Id);
@@ -1149,7 +1155,7 @@ public partial class Form1 : Form
         }
         catch
         {
-            return System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024.0 * 1024.0);
+            return System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / (1024.0 * 1024.0);
         }
     }
 
