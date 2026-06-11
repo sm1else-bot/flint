@@ -123,11 +123,6 @@ public static class ShellPages
         }
         .rh:hover{opacity:.6}
         /* System Monitor */
-        .sysmon-tile {
-          background: rgba(10, 10, 16, 0.85) !important;
-          border: 1px solid rgba(255, 80, 80, 0.25) !important;
-          box-shadow: inset 0 0 15px rgba(255, 80, 80, 0.05), 0 8px 32px rgba(0,0,0,0.4) !important;
-        }
         .sysmon-container {
           padding: 12px;
           display: flex;
@@ -151,22 +146,21 @@ public static class ShellPages
           font-weight: 800;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: rgba(255, 80, 80, 0.85);
-          text-shadow: 0 0 8px rgba(255, 80, 80, 0.3);
+          color: rgba(255, 255, 255, 0.6);
         }
         .sysmon-status-dot {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: #ff5050;
-          box-shadow: 0 0 8px #ff5050;
+          background: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
         }
         .sysmon-status-dot.pulse {
           animation: sysmon-pulse 1.5s infinite alternate;
         }
         @keyframes sysmon-pulse {
           0% { opacity: 0.3; }
-          100% { opacity: 1; box-shadow: 0 0 10px #ff5050; }
+          100% { opacity: 1; box-shadow: 0 0 10px rgba(255, 255, 255, 0.6); }
         }
         .sysmon-grid {
           display: grid;
@@ -189,12 +183,8 @@ public static class ShellPages
           content: '';
           position: absolute;
           top: 0; left: 0; width: 2px; height: 100%;
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.15);
         }
-        .cpu-card::before { background: #ff5050; }
-        .temp-card::before { background: #ffaa00; }
-        .ram-card::before { background: #00d4ff; }
-        .flint-card::before { background: #a855f7; }
 
         .sysmon-label {
           font-size: 8px;
@@ -219,11 +209,10 @@ public static class ShellPages
         .sysmon-bar-fill {
           height: 100%;
           border-radius: 2px;
+          background: rgba(255, 255, 255, 0.7);
+          box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
           transition: width 0.5s ease-out;
         }
-        .cpu-fill { background: #ff5050; box-shadow: 0 0 4px #ff5050; }
-        .temp-fill { background: #ffaa00; box-shadow: 0 0 4px #ffaa00; }
-        .ram-fill { background: #00d4ff; box-shadow: 0 0 4px #00d4ff; }
         .sysmon-flint-sub {
           font-size: 7px;
           color: rgba(255, 255, 255, 0.25);
@@ -1468,7 +1457,7 @@ public static class ShellPages
               <div class="sysmon-card flint-card">
                 <div class="sysmon-label">FLINT RAM</div>
                 <div class="sysmon-value" id="sysmon-flintram-${t.id}">0.0 MB</div>
-                <div class="sysmon-flint-sub">Subprocesses active</div>
+                <div class="sysmon-flint-sub">Main Process</div>
               </div>
             </div>
           `;
