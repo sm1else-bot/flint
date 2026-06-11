@@ -2239,7 +2239,7 @@ public partial class Form1 : Form
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(380, 600);
+            ClientSize = new Size(500, 800);
             BackColor = Color.FromArgb(24, 24, 28);
 
             webView.Dock = DockStyle.Fill;
