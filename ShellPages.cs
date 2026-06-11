@@ -291,6 +291,94 @@ public static class ShellPages
           color:rgba(0,0,0,.25);z-index:1;
         }
         .rh-photo:hover{color:rgba(0,0,0,.55)}
+        /* Weather Widget */
+        .wt-tile{display:flex;flex-direction:column;cursor:grab}
+        .wt-hdr{
+          display:flex;align-items:center;justify-content:space-between;
+          padding:6px 10px 2px;flex-shrink:0;
+        }
+        .wt-city{
+          font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+          color:rgba(255,255,255,.35);font-family:system-ui;cursor:pointer;
+          max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .wt-city:hover{color:rgba(255,255,255,.7)}
+        .wt-refresh{
+          background:transparent;border:none;color:rgba(255,255,255,.22);
+          font-size:14px;cursor:pointer;padding:0 2px;transition:color 120ms;
+          line-height:1;
+        }
+        .wt-refresh:hover{color:rgba(255,255,255,.6)}
+        .wt-body{
+          flex:1;display:flex;padding:0 10px 8px;gap:8px;min-height:0;
+        }
+        .wt-current{
+          flex:1.1;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;gap:4px;background:rgba(255,255,255,.02);
+          border-radius:8px;border:1px solid rgba(255,255,255,.04);
+          padding:4px;
+        }
+        .wt-temp{
+          font-size:24px;font-weight:300;font-family:system-ui;color:rgba(255,255,255,.9);
+          line-height:1;
+        }
+        .wt-cond{
+          font-size:9px;letter-spacing:.04em;text-transform:uppercase;
+          color:rgba(255,255,255,.4);font-family:system-ui;text-align:center;
+        }
+        .wt-icon{
+          width:28px;height:28px;stroke:rgba(255,255,255,.75);fill:none;
+          stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
+        }
+        /* Micro-animations for weather SVGs */
+        @keyframes wt-spin {
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes wt-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
+        @keyframes wt-rain {
+          0% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -6; }
+        }
+        .wt-spin { animation: wt-spin 12s linear infinite; transform-origin: center; }
+        .wt-float { animation: wt-float 3s ease-in-out infinite; }
+        .wt-rain { stroke-dasharray: 2 4; animation: wt-rain 1s linear infinite; }
+        
+        .wt-forecast{
+          flex:1;display:flex;flex-direction:column;justify-content:space-between;
+          padding:2px 0;
+        }
+        .wt-fore-row{
+          display:flex;align-items:center;justify-content:space-between;
+          font-size:11px;font-family:system-ui;color:rgba(255,255,255,.65);
+          height:24px;
+        }
+        .wt-fore-day{
+          font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+          color:rgba(255,255,255,.3);width:36px;
+        }
+        .wt-fore-icon{
+          width:16px;height:16px;stroke:rgba(255,255,255,.5);fill:none;
+          stroke-width:1.5;
+        }
+        .wt-fore-temp{
+          font-size:10px;text-align:right;min-width:38px;
+        }
+        .wt-unit-toggle{
+          display:flex;gap:2px;margin-top:2px;
+        }
+        .wt-unit-btn{
+          padding:2px 6px;font-size:9px;border-radius:4px;cursor:pointer;
+          background:transparent;border:1px solid rgba(255,255,255,.12);
+          color:rgba(255,255,255,.3);font-family:system-ui;transition:all 120ms;
+        }
+        .wt-unit-btn.active{
+          background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);
+          border-color:rgba(255,255,255,.2);
+        }
+
         /* Ghost */
         .ghost{
           position:absolute;border:1px dashed rgba(255,255,255,.3);
@@ -337,6 +425,10 @@ public static class ShellPages
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span>photo</span>
         </button>
+        <button class="tb-btn" id="tb-wt">
+          <svg viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
+          <span>weather</span>
+        </button>
       </div>
       <script>
         const post = p => window.chrome?.webview?.postMessage(JSON.stringify(p));
@@ -351,9 +443,9 @@ public static class ShellPages
         const DEF = {
           note:{w:6,h:5}, shortcut:{w:3,h:3}, clock:{w:4,h:2},
           label:{w:6,h:1}, line:{w:8,h:1}, timer:{w:5,h:4},
-          recent:{w:6,h:6}, photo:{w:5,h:6}
+          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}
         };
-        const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4} };
+        const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4}, weather:{w:7,h:4} };
 
         let tiles = [], occ = new Set(), placing = null, ghost = null, saveTm, photoZ = 600, linePtA = null;
 
@@ -379,7 +471,8 @@ public static class ShellPages
             const out = tiles.filter(t =>
               (t.type !== 'shortcut' || t.content?.url) &&
               (t.type !== 'photo'    || t.content?.url) &&
-              (t.type !== 'line'     || t.content?.x1 != null)
+              (t.type !== 'line'     || t.content?.x1 != null) &&
+              (t.type !== 'weather'  || t.content?.city)
             );
             post({ type:'savePegboard', json: JSON.stringify(out) });
           }, 500);
@@ -439,6 +532,7 @@ public static class ShellPages
           if (t.type === 'timer')    mkTimer(el, t);
           if (t.type === 'recent')   mkRecent(el, t);
           if (t.type === 'photo')    mkPhoto(el, t);
+          if (t.type === 'weather')  mkWeather(el, t);
           setupDrag(el, t);
           canvas.appendChild(el);
         }
@@ -807,6 +901,209 @@ public static class ShellPages
           load();
         }
 
+        // ── Weather ──────────────────────────────────────────────────
+        function getWeatherIcon(code, isForecast = false) {
+          let spin = !isForecast ? ' wt-spin' : '';
+          let float = !isForecast ? ' wt-float' : '';
+          let rain = !isForecast ? ' wt-rain' : '';
+          let sz = isForecast ? 'wt-fore-icon' : 'wt-icon';
+          let vb = isForecast ? '0 0 24 24' : '-2 -2 28 28';
+
+          if (code === 0) {
+            return `<svg class="${sz}${spin}" viewBox="${vb}"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+          }
+          if (code === 1 || code === 2 || code === 3) {
+            return `<svg class="${sz}" viewBox="${vb}"><path class="${float}" d="M19 10a4 4 0 0 0-7.5-1.5A5 5 0 0 0 2 13a5 5 0 0 0 5 5h12a4 4 0 0 0 0-8z"/></svg>`;
+          }
+          if (code === 45 || code === 48) {
+            return `<svg class="${sz}" viewBox="${vb}"><line x1="5" y1="9" x2="19" y2="9"/><line x1="3" y1="13" x2="21" y2="13"/><line x1="7" y1="17" x2="17" y2="17"/></svg>`;
+          }
+          if ([51,53,55,61,63,65,80,81,82].includes(code)) {
+            return `<svg class="${sz}" viewBox="${vb}"><path class="${float}" d="M19 10a4 4 0 0 0-7.5-1.5A5 5 0 0 0 2 13a5 5 0 0 0 5 5h12a4 4 0 0 0 0-8z"/><line class="${rain}" x1="9" y1="19" x2="7" y2="22"/><line class="${rain}" x1="13" y1="19" x2="11" y2="22"/><line class="${rain}" x1="17" y1="19" x2="15" y2="22"/></svg>`;
+          }
+          if ([71,73,75,85,86].includes(code)) {
+            return `<svg class="${sz}" viewBox="${vb}"><path class="${float}" d="M19 10a4 4 0 0 0-7.5-1.5A5 5 0 0 0 2 13a5 5 0 0 0 5 5h12a4 4 0 0 0 0-8z"/><line x1="9" y1="20" x2="9" y2="20.01"/><line x1="13" y1="20" x2="13" y2="20.01"/><line x1="17" y1="20" x2="17" y2="20.01"/></svg>`;
+          }
+          if ([95,96,99].includes(code)) {
+            return `<svg class="${sz}" viewBox="${vb}"><path class="${float}" d="M19 10a4 4 0 0 0-7.5-1.5A5 5 0 0 0 2 13a5 5 0 0 0 5 5h12a4 4 0 0 0 0-8z"/><polygon points="12 18 9 22 11 22 9 26 14 20 12 20 13 18" fill="currentColor"/></svg>`;
+          }
+          return `<svg class="${sz}" viewBox="${vb}"><path class="${float}" d="M19 10a4 4 0 0 0-7.5-1.5A5 5 0 0 0 2 13a5 5 0 0 0 5 5h12a4 4 0 0 0 0-8z"/></svg>`;
+        }
+
+        function getWeatherDesc(code) {
+          if (code === 0) return 'Sunny';
+          if (code === 1 || code === 2) return 'Partly Cloudy';
+          if (code === 3) return 'Overcast';
+          if (code === 45 || code === 48) return 'Foggy';
+          if ([51,53,55].includes(code)) return 'Drizzle';
+          if ([61,63,65].includes(code)) return 'Rain';
+          if ([71,73,75].includes(code)) return 'Snow';
+          if ([80,81,82].includes(code)) return 'Rain Showers';
+          if ([95,96,99].includes(code)) return 'Thunderstorm';
+          return 'Cloudy';
+        }
+
+        function getDayName(dateStr) {
+          const date = new Date(dateStr + 'T00:00:00');
+          return date.toLocaleDateString('en-US', { weekday: 'short' });
+        }
+
+        function mkWeather(el, t) {
+          if (!t.content?.city) { mkWeatherForm(el, t); return; }
+          el.classList.add('wt-tile');
+          
+          const hdr = document.createElement('div'); hdr.className = 'wt-hdr';
+          const cityEl = document.createElement('span'); cityEl.className = 'wt-city';
+          cityEl.textContent = t.content.city;
+          cityEl.title = 'Click to edit city';
+          cityEl.addEventListener('click', e => {
+            e.stopPropagation();
+            release(t);
+            t.content = {};
+            t.gridW = SETUP.weather.w; t.gridH = SETUP.weather.h;
+            claim(t);
+            const old = canvas.querySelector('[data-id="' + t.id + '"]');
+            if (old) old.remove();
+            mkTile(t); sched();
+          });
+          
+          const refBtn = document.createElement('button'); refBtn.className = 'wt-refresh'; refBtn.textContent = '\u21bb';
+          hdr.appendChild(cityEl); hdr.appendChild(refBtn);
+          el.appendChild(hdr);
+          
+          const body = document.createElement('div'); body.className = 'wt-body';
+          el.appendChild(body);
+          
+          function load() {
+            body.innerHTML = '<div class="recent-loading">\u2026</div>';
+            const unit = t.content.unit || 'C';
+            const lat = t.content.lat;
+            const lon = t.content.lon;
+            const unitParam = unit === 'F' ? '&temperature_unit=fahrenheit' : '';
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto${unitParam}`;
+            
+            fetch(url)
+              .then(res => res.json())
+              .then(data => {
+                body.innerHTML = '';
+                
+                const current = data.current_weather;
+                const temp = Math.round(current.temperature);
+                const code = current.weathercode;
+                
+                const curDiv = document.createElement('div'); curDiv.className = 'wt-current';
+                curDiv.innerHTML = `
+                  ${getWeatherIcon(code, false)}
+                  <div class="wt-temp">${temp}°</div>
+                  <div class="wt-cond">${getWeatherDesc(code)}</div>
+                `;
+                body.appendChild(curDiv);
+                
+                const foreDiv = document.createElement('div'); foreDiv.className = 'wt-forecast';
+                const daily = data.daily;
+                for (let i = 0; i < 3; i++) {
+                  const dayCode = daily.weathercode[i];
+                  const dayName = i === 0 ? 'Today' : getDayName(daily.time[i]);
+                  const tMax = Math.round(daily.temperature_2m_max[i]);
+                  const tMin = Math.round(daily.temperature_2m_min[i]);
+                  
+                  const row = document.createElement('div'); row.className = 'wt-fore-row';
+                  row.innerHTML = `
+                    <div class="wt-fore-day">${dayName}</div>
+                    ${getWeatherIcon(dayCode, true)}
+                    <div class="wt-fore-temp">${tMin}°/${tMax}°</div>
+                  `;
+                  foreDiv.appendChild(row);
+                }
+                body.appendChild(foreDiv);
+              })
+              .catch(err => {
+                body.innerHTML = '<div class="recent-empty">Error loading weather.</div>';
+              });
+          }
+          
+          refBtn.addEventListener('click', e => { e.stopPropagation(); load(); });
+          refBtn.addEventListener('mousedown', e => e.stopPropagation());
+          load();
+        }
+
+        function mkWeatherForm(el, t) {
+          el.style.cursor = 'default';
+          const form = document.createElement('div'); form.className = 'sc-form';
+          
+          const cityInp = document.createElement('input');
+          cityInp.type = 'text'; cityInp.placeholder = 'Enter city name...';
+          cityInp.addEventListener('mousedown', e => e.stopPropagation());
+          cityInp.addEventListener('click', e => e.stopPropagation());
+          form.appendChild(cityInp);
+          
+          const unitLbl = document.createElement('div');
+          unitLbl.className = 'sc-form-lbl'; unitLbl.textContent = 'temperature unit';
+          form.appendChild(unitLbl);
+          
+          const unitToggle = document.createElement('div');
+          unitToggle.className = 'wt-unit-toggle';
+          let selUnit = 'C';
+          const cBtn = document.createElement('button'); cBtn.className = 'wt-unit-btn active'; cBtn.textContent = '°C';
+          const fBtn = document.createElement('button'); fBtn.className = 'wt-unit-btn'; fBtn.textContent = '°F';
+          unitToggle.appendChild(cBtn); unitToggle.appendChild(fBtn);
+          unitToggle.addEventListener('mousedown', e => e.stopPropagation());
+          
+          cBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            cBtn.classList.add('active'); fBtn.classList.remove('active'); selUnit = 'C';
+          });
+          fBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            fBtn.classList.add('active'); cBtn.classList.remove('active'); selUnit = 'F';
+          });
+          form.appendChild(unitToggle);
+          
+          const statusDiv = document.createElement('div');
+          statusDiv.className = 'sc-form-lbl'; statusDiv.style.color = 'rgba(255,100,100,0.8)';
+          statusDiv.style.textTransform = 'none';
+          form.appendChild(statusDiv);
+          
+          const okBtn = document.createElement('button');
+          okBtn.className = 'sc-ok'; okBtn.textContent = 'Add weather';
+          okBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            const city = cityInp.value.trim();
+            if (!city) return;
+            
+            okBtn.textContent = 'Searching...';
+            okBtn.disabled = true;
+            statusDiv.textContent = '';
+            
+            const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`;
+            fetch(geoUrl)
+              .then(res => res.json())
+              .then(data => {
+                if (!data.results || data.results.length === 0) {
+                  throw new Error('City not found');
+                }
+                const res = data.results[0];
+                const displayName = res.name + (res.country_code ? ` (${res.country_code.toUpperCase()})` : '');
+                
+                release(t);
+                t.content = { city: displayName, lat: res.latitude, lon: res.longitude, unit: selUnit };
+                t.gridW = DEF.weather.w; t.gridH = DEF.weather.h;
+                claim(t);
+                
+                const old = canvas.querySelector('[data-id="' + t.id + '"]');
+                if (old) old.remove();
+                mkTile(t); sched();
+              })
+              .catch(err => {
+                okBtn.textContent = 'Add weather';
+                okBtn.disabled = false;
+                statusDiv.textContent = err.message || 'Geocoding failed';
+              });
+          });
+          form.appendChild(okBtn);
+          el.appendChild(form);
+        }
+
         // ── Photo ────────────────────────────────────────────────────
         function mkPhoto(el, t) {
           if (!t.content?.url) { mkPhotoForm(el, t); return; }
@@ -1030,6 +1327,7 @@ public static class ShellPages
         document.getElementById('tb-tmr').addEventListener('click',  () => startPlace('timer'));
         document.getElementById('tb-rec').addEventListener('click',  () => startPlace('recent'));
         document.getElementById('tb-ph').addEventListener('click',   () => startPlace('photo'));
+        document.getElementById('tb-wt').addEventListener('click',   () => startPlace('weather'));
 
         // ── Placement mode ───────────────────────────────────────────
         function startPlace(type) {
