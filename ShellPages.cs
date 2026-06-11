@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text.Json;
 
 namespace Flint;
 
@@ -1971,6 +1972,22 @@ public static class ShellPages
 
         string adBlockClass = profile.AdBlockEnabled ? " on" : "";
 
+        string extensionRows = profile.InstalledExtensions.Count == 0
+            ? """<div class="ext-empty">No extensions loaded</div>"""
+            : string.Join(Environment.NewLine, profile.InstalledExtensions.Select(path =>
+            {
+                string name = ReadExtensionName(path);
+                return $$"""
+                  <div class="settings-row" style="margin-top:6px;align-items:flex-start;">
+                    <div style="flex:1;min-width:0;">
+                      <strong>{{Html(name)}}</strong>
+                      <span style="font-size:11px;word-break:break-all;opacity:0.5;">{{Html(path)}}</span>
+                    </div>
+                    <button class="small-action" data-remove-extension="{{Attr(path)}}">Remove</button>
+                  </div>
+                  """;
+            }));
+
         return Page("Settings", $$"""
         <main class="page-shell">
           <header class="page-header"><div><h1>Settings</h1><p>Flint</p></div></header>
@@ -2010,6 +2027,15 @@ public static class ShellPages
                   style="width:100px;accent-color:rgba(116,247,255,0.8);cursor:pointer;">
                 <span id="grid-opacity-pct" style="font-size:11px;color:rgba(255,255,255,0.35);min-width:32px;text-align:right;">{{Math.Round(profile.PegboardGridOpacity * 100)}}%</span>
               </div>
+            </div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="margin-bottom:6px;">
+                <strong style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Extensions</strong>
+                <span style="font-size:11px;color:rgba(255,255,255,0.25);"> — power users only</span>
+              </div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.30);margin-bottom:10px;line-height:1.5;">Load unpacked extensions (folder containing manifest.json). Compatible with most content scripts and declarativeNetRequest extensions.</div>
+              {{extensionRows}}
+              <button class="primary-action" style="margin-top:10px;" data-action="addExtension">Add from folder</button>
             </div>
           </section>
           <script>
@@ -2156,7 +2182,7 @@ public static class ShellPages
             window.chrome.webview.postMessage(JSON.stringify(payload));
         };
         document.addEventListener("click", (event) => {
-          const el = event.target.closest("[data-action],[data-url],[data-query],[data-delete-history],[data-delete-bookmark],[data-engine],[data-tab],[data-adblock-toggle],[data-open-file],[data-remove-download]");
+          const el = event.target.closest("[data-action],[data-url],[data-query],[data-delete-history],[data-delete-bookmark],[data-engine],[data-tab],[data-adblock-toggle],[data-open-file],[data-remove-download],[data-remove-extension]");
           if (!el) return;
           if (el.dataset.tab) {
             document.querySelectorAll("[data-tab]").forEach(t => t.classList.toggle("active", t.dataset.tab === el.dataset.tab));
@@ -2176,6 +2202,7 @@ public static class ShellPages
           if (el.dataset.engine) post({ type: "setSearchEngine", engine: el.dataset.engine });
           if (el.dataset.openFile) post({ type: "openFile", path: el.dataset.openFile });
           if (el.dataset.removeDownload) post({ type: "removeDownload", id: el.dataset.removeDownload });
+          if (el.dataset.removeExtension) post({ type: "removeExtension", path: el.dataset.removeExtension });
         });
       </script>
     </body>
@@ -2184,6 +2211,19 @@ public static class ShellPages
 
     private static string FormatTimestamp(DateTimeOffset timestamp) =>
         timestamp.ToLocalTime().ToString("MMM d, h:mm tt", CultureInfo.CurrentCulture);
+
+    private static string ReadExtensionName(string folderPath)
+    {
+        try
+        {
+            string text = File.ReadAllText(Path.Combine(folderPath, "manifest.json"));
+            using var doc = JsonDocument.Parse(text);
+            if (doc.RootElement.TryGetProperty("name", out var n))
+                return n.GetString() ?? Path.GetFileName(folderPath);
+        }
+        catch { }
+        return Path.GetFileName(folderPath);
+    }
 
     private static string Html(string value) => WebUtility.HtmlEncode(value);
     private static string Attr(string value) => WebUtility.HtmlEncode(value);

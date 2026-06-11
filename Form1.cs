@@ -398,11 +398,32 @@ public partial class Form1 : Form
             browserReady = true;
             await AdBlocker.InitializeAsync();
             await OpenNewTab();
+            await LoadExtensionsAsync();
         }
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Flint could not start WebView2", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private async Task LoadExtensionsAsync()
+    {
+        if (store.Profile.InstalledExtensions.Count == 0) return;
+        if (activeTabIndex < 0 || ActiveView.CoreWebView2 == null) return;
+        var wvProfile = ActiveView.CoreWebView2.Profile;
+        bool changed = false;
+        foreach (string path in store.Profile.InstalledExtensions.ToList())
+        {
+            if (!Directory.Exists(path) || !File.Exists(Path.Combine(path, "manifest.json")))
+            {
+                store.Profile.InstalledExtensions.Remove(path);
+                changed = true;
+                continue;
+            }
+            try { await wvProfile.AddBrowserExtensionAsync(path); }
+            catch { store.Profile.InstalledExtensions.Remove(path); changed = true; }
+        }
+        if (changed) store.Save();
     }
 
     private async Task OpenNewTab()
@@ -1037,6 +1058,12 @@ public partial class Form1 : Form
                 case "setDefaultBrowser":
                     SetDefaultBrowser();
                     break;
+                case "addExtension":
+                    _ = AddExtensionAsync();
+                    break;
+                case "removeExtension":
+                    RemoveExtension(GetString(root, "path"));
+                    break;
                 case "getSystemStats":
                 {
                     double flintRam = GetFlintMemoryUsage(sender as CoreWebView2);
@@ -1439,6 +1466,47 @@ public partial class Form1 : Form
             ShowToast("Opening Windows default app settings...");
         }
         catch { }
+    }
+
+    private async Task AddExtensionAsync()
+    {
+        using var dlg = new FolderBrowserDialog
+        {
+            Description = "Select unpacked extension folder",
+            UseDescriptionForTitle = true
+        };
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+        string folderPath = dlg.SelectedPath;
+        if (!File.Exists(Path.Combine(folderPath, "manifest.json")))
+        {
+            ShowToast("Invalid extension folder — manifest.json not found");
+            return;
+        }
+
+        if (activeTabIndex < 0 || ActiveView.CoreWebView2 == null) return;
+        try
+        {
+            await ActiveView.CoreWebView2.Profile.AddBrowserExtensionAsync(folderPath);
+            if (!store.Profile.InstalledExtensions.Contains(folderPath))
+                store.Profile.InstalledExtensions.Add(folderPath);
+            store.Save();
+            ShowSettings();
+            ShowToast("Extension loaded — restart may be required for full effect");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Extension failed to load: {ex.Message}");
+        }
+    }
+
+    private void RemoveExtension(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        store.Profile.InstalledExtensions.Remove(path);
+        store.Save();
+        ShowToast("Extension removed — restart Flint to fully unload");
+        ShowSettings();
     }
 
     private void ChangeDownloadFolder()

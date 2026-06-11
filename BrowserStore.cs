@@ -152,6 +152,7 @@ public sealed class BrowserProfile
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     public List<HistoryItem> History { get; set; } = [];
     public List<BookmarkItem> Bookmarks { get; set; } = [];
+    public List<string> InstalledExtensions { get; set; } = [];
 }
 
 public sealed class BrowserSettings
