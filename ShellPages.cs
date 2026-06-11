@@ -195,7 +195,7 @@ public static class ShellPages
         }
         .sysmon-value {
           font-family: 'Courier New', Courier, monospace;
-          font-size: 16px;
+          font-size: 14px;
           font-weight: bold;
           color: #fff;
           margin: 4px 0;
@@ -577,7 +577,7 @@ public static class ShellPages
         const DEF = {
           note:{w:6,h:5}, shortcut:{w:3,h:3}, clock:{w:4,h:2},
           label:{w:6,h:1}, line:{w:8,h:1}, timer:{w:5,h:4},
-          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}, sysmon:{w:6,h:6}
+          recent:{w:6,h:6}, photo:{w:5,h:6}, weather:{w:7,h:5}, sysmon:{w:7,h:6}
         };
         const SETUP = { shortcut:{w:8,h:10}, photo:{w:5,h:4}, weather:{w:7,h:4} };
 
@@ -1425,6 +1425,8 @@ public static class ShellPages
             release(t);
             t.gridW = DEF.sysmon.w; t.gridH = DEF.sysmon.h;
             claim(t);
+            el.style.width  = g2p(t.gridW) + 'px';
+            el.style.height = g2p(t.gridH) + 'px';
           }
 
           const container = document.createElement('div');
