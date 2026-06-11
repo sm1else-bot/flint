@@ -12,7 +12,7 @@
 - **System Monitor Widget** — Added a system monitor tile type to the pegboard toolbox. It queries system performance data via the C# backend using low-level Win32 calls to measure system CPU load (via GetSystemTimes), total RAM utilization percentage (via GlobalMemoryStatusEx), Flint's own private memory footprint in MB (summing the main process and all child WebView2 subprocesses), and simulates a dynamic CPU temperature curve. Styled with a clean, semi-transparent white glass layout matching other widgets, utilizing horizontal status bars and monospace readouts.
 
 ### Changed
-- **User agent** — simplified to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flint/1.0 Safari/537.36`, dropping the Chrome version token.
+- **User agent** — restored global Chrome compatibility (`Chrome/124.0.0.0 Safari/537.36 Flint/1.0`) to resolve rendering and layout issues on websites like Facebook.
 - **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
 
 ### Fixed
