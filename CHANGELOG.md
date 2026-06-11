@@ -2,37 +2,38 @@
 
 ## [Unreleased]
 
-### Added
-- **Zoom controls** — `Ctrl++` / `Ctrl+=` zooms in, `Ctrl+-` zooms out, `Ctrl+0` resets to 100%. Zoom step is 0.1×, clamped between 25% and 500%. Each tab remembers its own zoom level, restored when switching tabs. Both the low-level keyboard hook and `ProcessCmdKey` handle all three shortcuts, including numpad `+`/`-`.
-- **Set as Default Browser** — Settings → Data tab now has a "Default Browser" row with a "Set as Default" button. Clicking it writes `HKCU\Software\Classes\FlintHTML\shell\open\command` and `HKCU\Software\Clients\StartMenuInternet\Flint\shell\open\command`, then opens `ms-settings:defaultapps` so the user can confirm the selection in Windows. Shows a toast: "Opening Windows default app settings..."
+---
 
-### Performance
-- **Narrow WebResourceRequested filter** — changed ad-blocker filter from `CoreWebView2WebResourceContext.All` to `Script` + `XmlHttpRequest` only. The handler was previously intercepting every resource request (images, fonts, CSS, media) on the UI thread, blocking each one while doing a URI parse and hash lookup. Now only script and XHR requests are inspected, eliminating the cross-process marshal overhead for all other resource types. Primary fix for low Speedometer scores.
-- **Chromium performance flags** — `CoreWebView2EnvironmentOptions` now passes `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-accelerated-2d-canvas`, `--use-angle=d3d11`, `--disable-renderer-backgrounding`, and `--max-tiles-for-interest-area=512` to the Chromium process at startup. GPU rasterization and zero-copy reduce CPU load on the render side, freeing more cycles for V8.
-- **Async history save** — `store.AddHistory` in `NavigationCompleted` is now dispatched via `Task.Run` so the synchronous `File.WriteAllText` no longer blocks the UI thread between page loads.
-- **Pre-rendered SparkFrame bitmaps** — the six loading-animation frames are now rendered once into a static `Bitmap[]` array at startup instead of allocating a new `Bitmap`, `Graphics`, and `Pen` on every 60ms timer tick. Eliminates per-tick GDI+ allocation and GC pressure during page loads.
-- **Cached active download count** — `GlassButton.OnPaint` no longer performs a LINQ scan over the downloads list and a three-level parent-chain cast on every repaint. The active download count is now maintained as a field (`_activeDownloadCount`) updated only when download state actually changes.
-- **User agent updated to Chrome/136** — previously reported `Chrome/124.0.0.0` (8 versions behind the bundled runtime). Updated to `Chrome/136.0.0.0` so sites serve current, optimised code paths.
+## [0.2.7] — 2026-06-10
 
 ### Added
-- **Address bar auto-focus on new tab** — opening a new tab (Ctrl+T, + button, or any other path) immediately focuses the address bar and selects all text so you can start typing right away.
-- **Address bar autocomplete dropdown** — typing in the address bar shows a borderless dark glass dropdown (same style as download dropdown) with up to 6 history matches (URL or title, most recent first) plus one "Search … with [Engine]" row per configured engine when the input doesn't look like a URL. Each history row shows the cached favicon, page title, and dimmed URL. ↓/↑ navigate rows from the keyboard, Enter accepts, Escape closes. Clicking a row navigates immediately. The dropdown hides when the address bar loses focus, when navigation starts, or when the box is cleared.
-- **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%). Adjusting it live-updates the percentage label and saves to `profile.json`. The home canvas dot grid picks up the stored value on next load. Stored as `PegboardGridOpacity` (double) on `BrowserProfile`.
-- **Smart Weather Forecast Widget** — Added a weather tile type to the pegboard toolbox. It queries Open-Meteo Geocoding and Weather APIs to display current temperatures/conditions alongside a 3-day forecast. Supports customizable locations, Celsius/Fahrenheit toggle, a manual reload action, custom-animated SVGs (spinning sun, floating cloud, falling rain), and scales layout dynamically to 7x5 grid units.
-- **Note tile drawing overlay** — A pencil icon in the note tile header toggles drawing mode. When active, text editing/checklists are disabled and users can doodle directly on the note using a smooth, velocity-weighted pen stroke algorithm that varies in weight (thinner when drawing fast, thicker when slow). Deactivating drawing mode restores text/checklist editing, leaving the doodle visible in the background. A trash button clears the canvas. Doodles are saved to `pegboard.json` as base64 data URLs.
-- **Note tile resizing improvements** — Proposed grid dimensions during resize are clamped in real-time to the maximum available free space, preventing overlapping and collision snapping reverts. The canvas does not scale or stretch existing drawings, and canvas resizing is deferred to `mouseup` ensuring 1:1 pixel rendering.
-- **System Monitor Widget** — Added a system monitor tile type to the pegboard toolbox. It queries system performance data via the C# backend using low-level Win32 calls to measure system CPU load (via GetSystemTimes), total RAM utilization percentage (via GlobalMemoryStatusEx), Flint's own private memory footprint in MB (summing the main process and all child WebView2 subprocesses), and simulates a dynamic CPU temperature curve. Styled with a clean, semi-transparent white glass layout matching other widgets, utilizing horizontal status bars and monospace readouts.
+- **Zoom controls** — `Ctrl++` / `Ctrl+=` zooms in, `Ctrl+-` zooms out, `Ctrl+0` resets to 100%. Zoom step is 0.1×, clamped between 25% and 500%. Each tab remembers its own zoom level, restored when switching tabs. Numpad `+`/`-` also supported.
+- **Set as Default Browser** — Settings → Data tab has a new "Default Browser" row with a "Set as Default" button. Clicking it writes the required registry keys under `HKCU\Software\Classes\FlintHTML` and `HKCU\Software\Clients\StartMenuInternet\Flint`, then opens `ms-settings:defaultapps` for user confirmation. Shows a toast: "Opening Windows default app settings..."
+- **Address bar auto-focus on new tab** — opening a new tab immediately focuses the address bar and selects all text so you can start typing right away.
+- **Address bar autocomplete dropdown** — typing shows a dark glass dropdown with up to 6 history matches (URL or title, most recent first) plus one "Search … with [Engine]" row per engine when the input doesn't look like a URL. Each history row shows the cached favicon, page title, and dimmed URL. ↓/↑ navigate rows, Enter accepts, Escape closes.
+- **Pegboard grid opacity setting** — Settings → Features now has a "Pegboard grid opacity" range slider (0–30%, default 5.5%), stored as `PegboardGridOpacity` in `profile.json`.
+- **Smart Weather Forecast Widget** — weather tile for the pegboard querying Open-Meteo. Shows current conditions and a 3-day forecast with animated SVGs (spinning sun, floating cloud, falling rain). Celsius/Fahrenheit toggle, customisable location, manual reload. Scales to 7×5 grid units.
+- **Note tile drawing overlay** — pencil icon in the note header toggles drawing mode. Velocity-weighted Bezier pen stroke (thinner when fast, thicker when slow). Doodle persists as base64 in `pegboard.json`; trash button clears it.
+- **Note tile resizing improvements** — resize proposals clamped to available free space in real time; canvas pixel dimensions deferred to `mouseup` for 1:1 rendering, no stretch.
+- **System Monitor Widget** — pegboard tile showing CPU load (Win32 `GetSystemTimes`), total RAM % (`GlobalMemoryStatusEx`), Flint private memory footprint (main process + all WebView2 child processes), and a simulated CPU temperature curve. Glass layout with horizontal status bars and monospace readouts.
 
 ### Changed
-- **User agent** — restored global Chrome compatibility (`Chrome/124.0.0.0 Safari/537.36 Flint/1.0`) to resolve rendering and layout issues on websites like Facebook.
-- **About tab — personal note** — replaced the engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with subtle clickable mailto and Instagram links.
-- **Pegboard toolbox layout** — redesigned the right-click toolbox from a single long horizontal pill layout to a balanced 5x2 grid with rounded corners (`border-radius: 14px`), matching the styling of other widgets.
+- **About tab** — replaced engine/telemetry info cards with a personal note from the author, signed "— Jessenth", with clickable mailto and Instagram links.
+- **Pegboard toolbox layout** — redesigned from a single horizontal pill to a balanced 5×2 grid (`border-radius: 14px`).
+- **User agent** — updated to `Chrome/136.0.0.0` to match the bundled WebView2 runtime and ensure sites serve current, optimised code paths. Retains full Chrome/Safari compatibility string.
 
 ### Fixed
-- **Favicon rendering** — downloaded favicons are now normalized to exactly 16×16 using `Graphics.DrawImage` with `InterpolationMode.HighQualityBicubic` (see `FetchAndSetFavicon` in `Form1.cs`), ensuring consistent size regardless of what the server returns.
-- **Tab favicon vertical alignment** — Fixed the sinking favicon issue by subclassing `Button` to create `TabTitleButton`. Overrode `OnPaint` without calling `base.OnPaint` to draw the normalized 16x16 favicon and text manually, leaving a margin before the close button to prevent overlapping. Added a modern hover effect (semi-transparent background overlay and brightened text for inactive tabs).
-- **Note tile checklist fix** — Fixed a crash in the checklist feature where typing `/c` followed by Space caused index errors when inserting the checkbox into the DOM. Checkbox checked states are now dynamically updated and persisted in `t.content.html` using event delegation.
-- **Pegboard toolbox viewport clipping** — fixed the right-click toolbox getting cut off at the right and bottom boundaries of the window by dynamically measuring its bounding rect and shifting/flipping it to the left or top of the cursor when it would overflow the viewport.
+- **Favicon rendering** — favicons normalised to exactly 16×16 with `InterpolationMode.HighQualityBicubic` regardless of server-returned size.
+- **Tab favicon vertical alignment** — `TabTitleButton` custom `OnPaint` draws favicon and text manually, preventing the sinking-favicon issue under ellipsis truncation. Hover effect added.
+- **Note tile checklist** — fixed index `DOMException` when typing `/c` + Space; checked states persisted via event delegation.
+- **Pegboard toolbox viewport clipping** — toolbox bounding rect measured and flipped left/up when it would overflow the viewport edge.
+
+### Performance
+- **Narrowed WebResourceRequested filter** — ad-blocker filter changed from `CoreWebView2WebResourceContext.All` to `Script` + `XmlHttpRequest` only, eliminating the blocking UI-thread marshal on every image, font, CSS, and media request.
+- **Chromium startup flags** — `CoreWebView2EnvironmentOptions` now sets `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-accelerated-2d-canvas`, `--use-angle=d3d11`, `--disable-renderer-backgrounding`, `--max-tiles-for-interest-area=512`.
+- **Async history save** — `store.AddHistory` dispatched via `Task.Run`; synchronous disk write no longer blocks the UI thread on page load.
+- **Pre-rendered SparkFrame bitmaps** — six loading animation frames rendered once into a static array; eliminates per-tick `Bitmap`/`Graphics`/`Pen` allocation.
+- **Cached download badge count** — `GlassButton.OnPaint` reads a maintained `_activeDownloadCount` field instead of scanning the downloads list on every repaint.
 
 ---
 
